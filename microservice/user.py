@@ -1,13 +1,11 @@
 from nameko.rpc import rpc
-from nameko.web.handlers import http
 
 from common.model import User
-from common.util import connect_to_database, generate_jwt, APIResponse
+from common.util import connect_to_database, APIResponse
 
 
 class UserService:
     name = "user_service"
-    url_prefix = "/user"
 
     def __init__(self):
         self.conn = connect_to_database()
