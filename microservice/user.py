@@ -1,7 +1,7 @@
 from nameko.rpc import rpc
 
 from common.model import User
-from common.util import connect_to_database, APIResponse, generate_jwt
+from common.util import connect_to_database, generate_jwt
 
 
 class UserService:
