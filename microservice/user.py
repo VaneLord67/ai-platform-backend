@@ -1,7 +1,7 @@
 from nameko.rpc import rpc
 
 from common.model import User
-from common.util import connect_to_database, APIResponse
+from common.util import connect_to_database, APIResponse, generate_jwt
 
 
 class UserService:
@@ -11,12 +11,13 @@ class UserService:
         self.conn = connect_to_database()
 
     @rpc
-    def register(self, user_json):
+    def register(self, user_json) -> str:
         user = User.from_json(user_json)
         username = user.username
         password = user.password
         conn = self.conn
         ok = False
+        user_id = 0
         if conn:
             # 插入新用户
             try:
@@ -26,21 +27,22 @@ class UserService:
                 conn.commit()
                 if cursor.rowcount > 0:
                     ok = True
+                    user_id = cursor.lastrowid
             except Exception as e:
                 print(f"Error: {e}")
-        if ok:
-            response = APIResponse.success()
-        else:
-            response = APIResponse.fail()
-        return response.to_json()
+        jwt = ""
+        if ok and user_id != 0:
+            jwt = generate_jwt(user_id, username)
+        return jwt
 
     @rpc
-    def login(self, user_json):
+    def login(self, user_json) -> str:
         user = User.from_json(user_json)
         username = user.username
         password = user.password
         conn = self.conn
         ok = False
+        user_id = 0
         if conn:
             try:
                 cursor = conn.cursor()
@@ -48,6 +50,11 @@ class UserService:
                 cursor.execute(query, (username, password))
                 result = cursor.fetchone()
                 ok = bool(result)
+                if result and len(result) > 0:
+                    user_id = result[0]
             except Exception as e:
                 print(f"Error: {e}")
-        return ok
+        jwt = ""
+        if ok and user_id != 0:
+            jwt = generate_jwt(user_id, username)
+        return jwt

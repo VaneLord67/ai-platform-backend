@@ -10,8 +10,8 @@ user_bp = Blueprint('user', __name__, url_prefix='/user')
 def login():
     json_data = request.get_json()
     user = User.from_json(json_data)
-    ok = rpc.user_service.login(user)
-    response = APIResponse.success() if ok else APIResponse.fail()
+    jwt = rpc.user_service.login(user)
+    response = APIResponse.success_with_data(jwt) if jwt != "" else APIResponse.fail()
     return response.to_dict()
 
 
@@ -19,6 +19,6 @@ def login():
 def register():
     json_data = request.get_json()
     user = User.from_json(json_data)
-    ok = rpc.user_service.register(user)
-    response = APIResponse.success() if ok else APIResponse.fail()
+    jwt = rpc.user_service.register(user)
+    response = APIResponse.success_with_data(jwt) if jwt != "" else APIResponse.fail()
     return response.to_dict()

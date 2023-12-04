@@ -34,9 +34,10 @@ class APIResponse:
 secret_key = 'ai-platform'
 
 
-def generate_jwt(username: str) -> str:
+def generate_jwt(id: int, username: str) -> str:
     expiration_time = datetime.utcnow() + timedelta(hours=24)
     payload = {
+        'id': id,
         'username': username,
         'exp': expiration_time
     }
