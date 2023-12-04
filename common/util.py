@@ -30,10 +30,11 @@ class APIResponse:
     def fail():
         return APIResponse(code=0, message="fail")
 
+
 secret_key = 'ai-platform'
 
-def generate_jwt(username: str) -> str:
 
+def generate_jwt(username: str) -> str:
     expiration_time = datetime.utcnow() + timedelta(hours=24)
     payload = {
         'username': username,
@@ -41,6 +42,7 @@ def generate_jwt(username: str) -> str:
     }
     token = jwt.encode(payload, secret_key, algorithm='HS256')
     return token
+
 
 def decode_jwt(token: str) -> dict | None:
     try:
@@ -50,6 +52,7 @@ def decode_jwt(token: str) -> dict | None:
         return None
     except jwt.InvalidTokenError:
         return None
+
 
 def connect_to_database():
     try:

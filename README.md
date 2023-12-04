@@ -6,3 +6,10 @@
 
 # RabbitMQ
 docker run -it --rm --name rabbitmq -p 5672:5672 -p 15672:15672 rabbitmq:3.12-management
+
+# cgi
+$env:FLASK_APP = "cgi/main.py"
+python -m flask run --port=8086
+
+# microservice
+nameko run microservice.user:UserService
