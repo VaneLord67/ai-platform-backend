@@ -1,34 +1,81 @@
 import json
 from datetime import datetime, timedelta
+from typing import Any
 
 import jwt
 import mysql.connector
 from mysql.connector import Error
 
 
-class APIResponse:
-    def __init__(self, code, message, data=None):
-        self.code = code
-        self.message = message
-        self.data = data
+class JsonEncoder(json.JSONEncoder):
+    """Extended json encoder to support custom class types."""
 
-    def to_dict(self):
-        return {'code': self.code, 'message': self.message, 'data': self.data}
+    def default(self, o: Any) -> Any:
+        if issubclass(o.__class__, (JsonBase)):
+            return o.to_json()
+        return super().default(o)
+
+
+class JsonBase(object):
+    """Base class to support json Serialization and Deserialization.
+
+    Classes that want to support json serialization and deserialization conveniently should
+    subclass this class
+    """
+
+    def __init__(self) -> None:
+        super().__setattr__("_json", {})
+
+    def __setattr__(self, key: str, value: Any) -> None:
+        if hasattr(value, "to_json"):
+            self._json[key] = value.to_json()
+
+        elif isinstance(value, list):
+            if len(value) > 0 and hasattr(value[0], "to_json"):
+                self._json[key] = [v.to_json() for v in value]
+            else:
+                self._json[key] = [v for v in value]
+
+        else:
+            self._json[key] = value
+        super().__setattr__(key, value)
+
+    def __repr__(self) -> str:
+        return json.dumps(self._json, cls=JsonEncoder)
+
+    def __str__(self) -> str:
+        return self.__repr__()
 
     def to_json(self):
-        return json.dumps(self.to_dict())
+        # dump to dict
+        return self._json
 
-    @staticmethod
-    def success():
-        return APIResponse(code=1, message="success")
+    def from_json(self, j: str):
+        """Deserialization subclass from str j.
 
-    @staticmethod
-    def success_with_data(data):
-        return APIResponse(code=1, message="success", data=data)
+        Be careful! This method will overwrite self.
+        **Only support json obj**.
 
-    @staticmethod
-    def fail():
-        return APIResponse(code=0, message="fail")
+        Args:
+            j (str): Str that conforming to the json standard and the serialization type of subclass.
+
+        Returns:
+            (subclass): Subclass
+        """
+        d = json.loads(j)
+        return self.from_dict(d)
+
+    def from_dict(self, d: dict):
+        if isinstance(d, dict):
+            for key, value in d.items():
+                if key in self.__dict__:
+                    if hasattr(self.__dict__[key], "from_json"):
+                        setattr(
+                            self, key, self.__dict__[key].from_json(json.dumps(value))
+                        )
+                    else:
+                        setattr(self, key, value)
+        return self
 
 
 secret_key = 'ai-platform'
