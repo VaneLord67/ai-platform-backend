@@ -3,11 +3,7 @@ import time
 
 from nameko.events import event_handler, BROADCAST, SERVICE_POOL
 from nameko.rpc import rpc
-from nameko.web.handlers import http
-from werkzeug import Request
 
-from common.api_response import APIResponse
-from common.error_code import ErrorCodeEnum
 from common.util import connect_to_database
 from microservice.redis_storage import RedisStorage
 from model.ai_model import AIModel
@@ -62,18 +58,6 @@ class DetectionService:
     def close_one_event_handler(self, payload):
         print("receive close one event")
         raise KeyboardInterrupt
-
-    # @http('POST', '/model/detect')
-    # def detectHTTPHandler(self, request: Request):
-    #     json_data = request.get_json()
-    #     hyperparameter = Hyperparameter().from_dict(json_data['hyperparameter']) \
-    #         if 'hyperparameter' in json_data else Hyperparameter()
-    #     supportInput = SupportInput().from_dict(json_data['support_input'])
-    #     if supportInput.type == SINGLE_PICTURE_URL_TYPE:
-    #         output = DetectionOutput()
-    #         output.url = "https://img2.baidu.com/it/u=2933220116,3086945787&fm=253&fmt=auto&app=138&f=JPEG?w=744&h=500"
-    #         return APIResponse.success_with_data(output).__str__()
-    #     return APIResponse.fail_with_error_code_enum(ErrorCodeEnum.UNSUPPORTED_INPUT_ERROR)
 
     @rpc
     def detectRPCHandler(self, args: dict):

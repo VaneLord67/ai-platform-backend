@@ -6,6 +6,8 @@ import jwt
 import mysql.connector
 from mysql.connector import Error
 
+from common.config import config
+
 
 class JsonEncoder(json.JSONEncoder):
     """Extended json encoder to support custom class types."""
@@ -78,9 +80,6 @@ class JsonBase(object):
         return self
 
 
-secret_key = 'ai-platform'
-
-
 def generate_jwt(id: int, username: str) -> str:
     expiration_time = datetime.utcnow() + timedelta(hours=24)
     payload = {
@@ -88,13 +87,13 @@ def generate_jwt(id: int, username: str) -> str:
         'username': username,
         'exp': expiration_time
     }
-    token = jwt.encode(payload, secret_key, algorithm='HS256')
+    token = jwt.encode(payload, config.get("jwt_secret"), algorithm='HS256')
     return token
 
 
 def decode_jwt(token: str) -> dict | None:
     try:
-        decoded_payload = jwt.decode(token, secret_key, algorithms=['HS256'])
+        decoded_payload = jwt.decode(token, config.get("jwt_secret"), algorithms=['HS256'])
         return decoded_payload
     except jwt.ExpiredSignatureError:
         return None
@@ -106,11 +105,11 @@ def connect_to_database():
     try:
         # 建立数据库连接
         connection = mysql.connector.connect(
-            host='localhost',
-            port='3307',
-            database='ai-platform',
-            user='root',
-            password='abc123'
+            host=config.get("mysql_host"),
+            port=config.get("mysql_port"),
+            database=config.get("mysql_database"),
+            user=config.get("mysql_user"),
+            password=config.get("mysql_password")
         )
 
         if connection.is_connected():

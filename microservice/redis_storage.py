@@ -1,3 +1,5 @@
+from typing import Union
+
 from nameko.extensions import DependencyProvider
 
 import redis
@@ -14,10 +16,10 @@ class RedisStorageWrapper:
 class RedisStorage(DependencyProvider):
 
     def __init__(self):
-        self.client: redis.StrictRedis = None
+        self.client: Union[redis.StrictRedis, None] = None
 
     def setup(self):
-        self.client: redis.StrictRedis = redis.StrictRedis.from_url(config.get("redis_url"))
+        self.client: Union[redis.StrictRedis, None] = redis.StrictRedis.from_url(config.get("redis_url"))
 
     def get_dependency(self, worker_ctx):
         return RedisStorageWrapper(self.client)

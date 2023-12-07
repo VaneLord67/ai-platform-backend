@@ -1,3 +1,13 @@
 {
-  "redis_url": "redis://localhost:6379/11"
+  "redis_url": "redis://localhost:6379/11",
+
+  "mysql_host": "localhost",
+  "mysql_port": "3307",
+  "mysql_database": "ai-platform",
+  "mysql_user": "root",
+  "mysql_password": "abc123",
+
+  "jwt_secret": "ai-platform",
+
+  "rabbitmq_url": "pyamqp://guest:guest@localhost"
 }
