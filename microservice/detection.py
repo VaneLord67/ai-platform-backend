@@ -1,6 +1,7 @@
 import threading
+import time
 
-from nameko.events import event_handler, BROADCAST
+from nameko.events import event_handler, BROADCAST, SERVICE_POOL
 from nameko.rpc import rpc
 from nameko.web.handlers import http
 from werkzeug import Request
@@ -24,7 +25,7 @@ def initStateInfo():
     hyperparameter.name = "置信度阈值"
 
     model = AIModel()
-    model.field = "detection"
+    model.field = "检测"
     model.hyperparameters = [hyperparameter]
     model.name = "yoloV8"
     model.support_input = [SINGLE_PICTURE_URL_TYPE]
@@ -52,17 +53,27 @@ class DetectionService:
         finally:
             self.state_lock.release()
 
-    @http('POST', '/model/detect')
-    def detectHTTPHandler(self, request: Request):
-        json_data = request.get_json()
-        hyperparameter = Hyperparameter().from_dict(json_data['hyperparameter']) \
-            if 'hyperparameter' in json_data else Hyperparameter()
-        supportInput = SupportInput().from_dict(json_data['support_input'])
-        if supportInput.type == SINGLE_PICTURE_URL_TYPE:
-            output = DetectionOutput()
-            output.url = "https://img2.baidu.com/it/u=2933220116,3086945787&fm=253&fmt=auto&app=138&f=JPEG?w=744&h=500"
-            return APIResponse.success_with_data(output).__str__()
-        return APIResponse.fail_with_error_code_enum(ErrorCodeEnum.UNSUPPORTED_INPUT_ERROR)
+    @event_handler("manage_service", name + "close_event", handler_type=BROADCAST, reliable_delivery=False)
+    def close_event_handler(self, payload):
+        print("receive close event")
+        raise KeyboardInterrupt
+
+    @event_handler("manage_service", name + "close_one_event", handler_type=SERVICE_POOL, reliable_delivery=False)
+    def close_one_event_handler(self, payload):
+        print("receive close one event")
+        raise KeyboardInterrupt
+
+    # @http('POST', '/model/detect')
+    # def detectHTTPHandler(self, request: Request):
+    #     json_data = request.get_json()
+    #     hyperparameter = Hyperparameter().from_dict(json_data['hyperparameter']) \
+    #         if 'hyperparameter' in json_data else Hyperparameter()
+    #     supportInput = SupportInput().from_dict(json_data['support_input'])
+    #     if supportInput.type == SINGLE_PICTURE_URL_TYPE:
+    #         output = DetectionOutput()
+    #         output.url = "https://img2.baidu.com/it/u=2933220116,3086945787&fm=253&fmt=auto&app=138&f=JPEG?w=744&h=500"
+    #         return APIResponse.success_with_data(output).__str__()
+    #     return APIResponse.fail_with_error_code_enum(ErrorCodeEnum.UNSUPPORTED_INPUT_ERROR)
 
     @rpc
     def detectRPCHandler(self, args: dict):
@@ -74,6 +85,8 @@ class DetectionService:
             supportInput = SupportInput().from_dict(args['supportInput'])
             output = DetectionOutput()
             if supportInput.type == SINGLE_PICTURE_URL_TYPE:
+                # handle input
+                time.sleep(1)
                 output.url = "https://img2.baidu.com/it/u=2933220116,3086945787&fm=253&fmt=auto&app=138&f=JPEG?w=744&h=500"
                 return output
             return output

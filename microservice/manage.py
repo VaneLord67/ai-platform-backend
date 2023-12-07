@@ -39,6 +39,11 @@ class ManageService:
         self.dispatch(f"{service_name}close_event", service_name)
 
     @rpc
+    def close_one_instance(self, service_name):
+        print(f"close one instance: {service_name}")
+        self.dispatch(f"{service_name}close_one_event", service_name)
+
+    @rpc
     def run_service(self, service_name):
         service_name = service_name.replace("_service", "")
         print(f"start a {service_name} instance...")
