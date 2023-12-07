@@ -9,5 +9,10 @@
 
   "jwt_secret": "ai-platform",
 
-  "rabbitmq_url": "pyamqp://guest:guest@localhost"
+  "rabbitmq_url": "pyamqp://guest:guest@localhost",
+
+  "minio_url": "localhost:9000",
+  "minio_access_key": "FujWoxJFDfBZJUkSKHkz",
+  "minio_secret_key": "BCCErWzORCmuce6xoeDKq44bBIhHBIpaj3jCRnAL",
+  "bucket_name": "ai-platform"
 }

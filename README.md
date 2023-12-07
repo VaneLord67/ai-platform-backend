@@ -9,9 +9,14 @@ flask
 flask-cors
 flask_nameko
 nameko
+minio
+redis
 
 # RabbitMQ
 docker run -it --rm --name rabbitmq -p 5672:5672 -p 15672:15672 rabbitmq:3.12-management
+
+# minio
+docker run -d --name ai-minio -p 9000:9000 -p 9001:9001 -e MINIO_ROOT_USER="minio-root-user" -e MINIO_ROOT_PASSWORD="minio-root-password" bitnami/minio:latest
 
 # cgi
 $env:FLASK_APP = "cgi/main.py"
