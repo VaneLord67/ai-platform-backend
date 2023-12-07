@@ -1,8 +1,8 @@
 from flask import request, Blueprint
 
+from common.api_response import APIResponse
 from .singleton import rpc
 from common.model import User
-from common.util import APIResponse
 user_bp = Blueprint('user', __name__, url_prefix='/user')
 
 

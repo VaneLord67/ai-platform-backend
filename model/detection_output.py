@@ -7,4 +7,4 @@ class DetectionOutput(JsonBase):
         self.url: str = ""
 
     def __json__(self):
-        return self.to_json()
+        return self.__str__()

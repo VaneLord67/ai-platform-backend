@@ -12,6 +12,12 @@ class APIResponse(JsonBase):
         self.data = data
 
     def to_dict(self):
+        if isinstance(self.data, list):
+            dict_list = []
+            for item in self.data:
+                item_dict = item.to_json()
+                dict_list.append(item_dict)
+            return {'code': self.code, 'message': self.message, 'data': dict_list}
         return {'code': self.code, 'message': self.message, 'data': self.data}
 
     @staticmethod

@@ -8,7 +8,7 @@ from model.support_input import SupportInput
 class AIModel(JsonBase):
     def __init__(self):
         super().__init__()
-        self.id: int = 0
+        # self.id: int = 0
         self.name: str = ""
         self.field: str = ""
         self.hyperparameters: List[Hyperparameter] = []

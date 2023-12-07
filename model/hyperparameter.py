@@ -6,6 +6,7 @@ class Hyperparameter(JsonBase):
         super().__init__()
         self.type: str = ""
         self.name: str = ""
+        self.value: str = ""
 
     def __json__(self):
         return self.to_json()
