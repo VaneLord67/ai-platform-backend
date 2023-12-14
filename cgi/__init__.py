@@ -10,7 +10,6 @@ from common.config import config
 
 def create_app():
     flaskApp = Flask(__name__)
-    CORS(flaskApp)
     flaskApp.config.update(dict(
         NAMEKO_AMQP_URI=config.get("rabbitmq_url")
     ))
@@ -18,6 +17,7 @@ def create_app():
     flaskApp.register_blueprint(detection_bp)
     flaskApp.register_blueprint(model_manage_bp)
     flaskApp.register_blueprint(object_storage_bp)
+    CORS(flaskApp)
     return flaskApp
 
 

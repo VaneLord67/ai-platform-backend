@@ -10,12 +10,14 @@ class MinioStorageWrapper:
 
     def __init__(self, client):
         self.client = client
+        self.bucket_name = config.config.get("bucket_name")
 
 
 class MinioStorage(DependencyProvider):
 
     def __init__(self):
         self.client: Union[Minio, None] = None
+        self.bucket_name = config.config.get("bucket_name")
 
     def setup(self):
         self.client = Minio(

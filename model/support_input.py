@@ -11,7 +11,7 @@ class SupportInput(JsonBase):
         super().__init__()
         self.type: str = ""
         self.format: str = ""
-        self.value: str = ""
+        self.value: any = ""
 
     def __json__(self):
         return self.to_json()

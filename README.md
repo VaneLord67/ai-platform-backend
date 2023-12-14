@@ -18,9 +18,28 @@ docker run -it --rm --name rabbitmq -p 5672:5672 -p 15672:15672 rabbitmq:3.12-ma
 # minio
 docker run -d --name ai-minio -p 9000:9000 -p 9001:9001 -e MINIO_ROOT_USER="minio-root-user" -e MINIO_ROOT_PASSWORD="minio-root-password" bitnami/minio:latest
 
+# redis
+docker run -d --rm --name ai-redis -p 6379:6379 redis
+
 # cgi
 $env:FLASK_APP = "cgi/main.py"
 python -m flask run --port=8086
 
 # microservice
+nameko run microservice.manage:ManageService
+nameko run microservice.object_storage:ObjectStorageService
+nameko run microservice.detection:DetectionService
 nameko run microservice.user:UserService
+
+# yolo
+```cmd
+# 推理图片
+--model=E:/GraduationDesign/yolov8n.trt --size=640 --batch_size=1  --img=E:/GraduationDesign/tensorrt-alpha/data/6406402.jpg --show --savePath=E:\GraduationDesign\tensorOutput
+# 推理视频
+--model=E:/GraduationDesign/yolov8n.trt --size=640 --batch_size=8  --video=E:/GraduationDesign/tensorrt-alpha/data/people.mp4 --show --savePath=E:\GraduationDesign\tensorOutput
+```
+
+```cmd
+"--model=E:/GraduationDesign/yolov8n.trt" --size=640 --batch_size=1  --img=E:/GraduationDesign/tensorrt-alpha/data/6406402.jpg --show --savePath=E:\GraduationDesign\tensorOutput
+
+```

@@ -12,7 +12,7 @@ def call():
     output_dict = rpc.detection_service.detectRPCHandler(request.get_json())
     output: DetectionOutput = DetectionOutput().from_json(output_dict)
     response: APIResponse
-    if output.url == "":
+    if len(output.urls) == 0:
         response = APIResponse.fail()
     else:
         response = APIResponse.success_with_data(output)

@@ -1,10 +1,15 @@
+import os
+import shutil
 import threading
 import time
+import uuid
 
 from nameko.events import event_handler, BROADCAST, SERVICE_POOL
-from nameko.rpc import rpc
+from nameko.rpc import rpc, RpcProxy
 
-from common.util import connect_to_database
+from ais.yolo import YoloArg, call_yolo
+from common.util import connect_to_database, download_file, find_any_file
+from microservice.object_storage import ObjectStorageService
 from microservice.redis_storage import RedisStorage
 from model.ai_model import AIModel
 from model.detection_output import DetectionOutput
@@ -32,9 +37,13 @@ def initStateInfo():
 
 class DetectionService:
     name = "detection_service"
+
     serviceInfo = initStateInfo()
     state_lock = threading.Lock()
+
     redis_storage = RedisStorage()
+
+    objectStorageService = RpcProxy(ObjectStorageService.name)
 
     def __init__(self):
         self.conn = connect_to_database()
@@ -64,15 +73,44 @@ class DetectionService:
         self.state_lock.acquire()
         try:
             self.serviceInfo.state = ServiceRunningState
-            hyperparameter = Hyperparameter().from_dict(args['hyperparameter']) \
-                if 'hyperparameter' in args else Hyperparameter()
+            if 'hyperparameters' in args:
+                hps = args['hyperparameters']
+                hyperparameters = []
+                for hp in hps:
+                    hyperparameters.append(Hyperparameter().from_dict(hp))
+
             supportInput = SupportInput().from_dict(args['supportInput'])
             output = DetectionOutput()
+            urls = []
             if supportInput.type == SINGLE_PICTURE_URL_TYPE:
                 # handle input
-                time.sleep(1)
-                output.url = "https://img2.baidu.com/it/u=2933220116,3086945787&fm=253&fmt=auto&app=138&f=JPEG?w=744&h=500"
-                return output
+                pic_url = supportInput.value
+                img_name, img_path = download_file(pic_url)
+                unique_id = str(uuid.uuid4())
+                output_path = f"temp/{img_name}_{unique_id}/"
+                # 创建文件夹
+                try:
+                    os.makedirs(output_path, exist_ok=True)
+                    print(f"Folder '{output_path}' created successfully.")
+
+                    yolo_arg = YoloArg(img_path=img_path, save_path=output_path)
+                    frames = call_yolo(yolo_arg)
+                    output.frames = frames
+                    output_img_path = find_any_file(output_path)
+
+                    url = self.objectStorageService.upload_object(output_img_path)
+                    urls.append(url)
+                    output.urls = urls
+                    return output
+                finally:
+                    if os.path.exists(img_path):
+                        try:
+                            os.remove(img_path)
+                            print(f'File {img_path} deleted successfully.')
+                        except OSError as e:
+                            print(f'Error deleting file {img_path}: {e}')
+                    shutil.rmtree(output_path)
+                    print(f"Folder '{output_path}' deleted successfully.")
             return output
         finally:
             self.serviceInfo.state = ServiceReadyState

@@ -1,9 +1,12 @@
 import json
+import os
 from datetime import datetime, timedelta
 from typing import Any
+from urllib.parse import urlparse, unquote
 
 import jwt
 import mysql.connector
+import requests
 from mysql.connector import Error
 
 from common.config import config
@@ -118,3 +121,31 @@ def connect_to_database():
     except Error as e:
         print(f"Error: {e}")
         return None
+
+
+def download_file(url, temp_dir='temp'):
+    response = requests.get(url)
+    if response.status_code == 200:
+        url_path = urlparse(url).path
+        file_name = unquote(os.path.basename(url_path))
+        file_path = f'{temp_dir}/{file_name}'
+        with open(file_path, 'wb') as f:
+            f.write(response.content)
+        return file_name, file_path
+    else:
+        print(f"Failed to download file from {url}. Status code: {response.status_code}")
+        return None
+
+
+def find_any_file(folder_path):
+    for root, dirs, files in os.walk(folder_path):
+        for file_name in files:
+            file_path = os.path.join(root, file_name)
+            return file_path  # 返回第一个找到的文件路径
+
+    return None  # 如果未找到任何文件，返回None
+
+
+def get_filename_and_ext(file_path):
+    file_name, file_extension = os.path.splitext(os.path.basename(file_path))
+    return file_name, file_extension

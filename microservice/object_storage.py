@@ -1,10 +1,9 @@
+import uuid
 from datetime import timedelta
 
 from nameko.rpc import rpc
 
-from common.config import config
-from common.model import User
-from common.util import generate_jwt
+from common.util import get_filename_and_ext
 from microservice.minio_storage import MinioStorage
 
 
@@ -18,6 +17,29 @@ class ObjectStorageService:
     @rpc
     def get_presigned_url(self, object_name):
         client = self.minio_storage.client
-        bucket_name = config.get("bucket_name")
+        bucket_name = self.minio_storage.bucket_name
         url = client.presigned_put_object(bucket_name, object_name, expires=timedelta(days=1))
         return url
+
+    @rpc
+    def get_object_url(self, object_name):
+        client = self.minio_storage.client
+        bucket_name = self.minio_storage.bucket_name
+        url = client.presigned_get_object(bucket_name, object_name, expires=timedelta(hours=24))
+        return url
+
+    @rpc
+    def upload_object(self, object_path):
+        client = self.minio_storage.client
+        bucket_name = self.minio_storage.bucket_name
+        file_name, file_ext = get_filename_and_ext(object_path)
+        unique_id = str(uuid.uuid4())
+        new_file_name = f"{file_name}_{unique_id}.{file_ext}"
+        result = client.fput_object(
+            bucket_name, new_file_name, object_path,
+        )
+        object_name = result.object_name
+        url = self.get_object_url(object_name)
+        return url
+
+

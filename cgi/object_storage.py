@@ -12,3 +12,10 @@ def get_presigned_url():
     presigned_url = rpc.object_storage_service.get_presigned_url(object_name)
     return APIResponse.success_with_data(presigned_url).to_dict()
 
+
+@object_storage_bp.route('/url', methods=['GET'])
+def get_url():
+    object_name = request.args.get("objectName")
+    url = rpc.object_storage_service.get_object_url(object_name)
+    return APIResponse.success_with_data(url).to_dict()
+
