@@ -26,6 +26,8 @@ def call_yolo(yoloArg: YoloArg):
     args.append(f"--batch_size={yoloArg.batch_size}")
     if yoloArg.img_path:
         args.append(f"--img={yoloArg.img_path}")
+    if yoloArg.video_path:
+        args.append(f"--video={yoloArg.video_path}")
     if yoloArg.is_show:
         args.append("--show")
     if yoloArg.save_path:

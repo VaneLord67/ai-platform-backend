@@ -21,15 +21,15 @@ from model.support_input import *
 def initStateInfo():
     serviceInfo = ServiceInfo()
 
-    hyperparameter = Hyperparameter()
-    hyperparameter.type = "integer"
-    hyperparameter.name = "置信度阈值"
+    hp_batch_size = Hyperparameter()
+    hp_batch_size.type = "integer"
+    hp_batch_size.name = "batch_size"
 
     model = AIModel()
     model.field = "检测"
-    model.hyperparameters = [hyperparameter]
+    model.hyperparameters = [hp_batch_size]
     model.name = "yoloV8"
-    model.support_input = [SINGLE_PICTURE_URL_TYPE]
+    model.support_input = [SINGLE_PICTURE_URL_TYPE, MULTIPLE_PICTURE_URL_TYPE]
 
     serviceInfo.model = model
     return serviceInfo
@@ -82,36 +82,45 @@ class DetectionService:
             supportInput = SupportInput().from_dict(args['supportInput'])
             output = DetectionOutput()
             urls = []
+            frames = []
             if supportInput.type == SINGLE_PICTURE_URL_TYPE:
-                # handle input
-                pic_url = supportInput.value
-                img_name, img_path = download_file(pic_url)
-                unique_id = str(uuid.uuid4())
-                output_path = f"temp/{img_name}_{unique_id}/"
-                # 创建文件夹
-                try:
-                    os.makedirs(output_path, exist_ok=True)
-                    print(f"Folder '{output_path}' created successfully.")
-
-                    yolo_arg = YoloArg(img_path=img_path, save_path=output_path)
-                    frames = call_yolo(yolo_arg)
-                    output.frames = frames
-                    output_img_path = find_any_file(output_path)
-
-                    url = self.objectStorageService.upload_object(output_img_path)
-                    urls.append(url)
-                    output.urls = urls
-                    return output
-                finally:
-                    if os.path.exists(img_path):
-                        try:
-                            os.remove(img_path)
-                            print(f'File {img_path} deleted successfully.')
-                        except OSError as e:
-                            print(f'Error deleting file {img_path}: {e}')
-                    shutil.rmtree(output_path)
-                    print(f"Folder '{output_path}' deleted successfully.")
+                img_url = supportInput.value
+                urls, frames = self.handleSingleImage(img_url)
+            elif supportInput.type == MULTIPLE_PICTURE_URL_TYPE:
+                img_urls = supportInput.value
+                urls = []
+                frames = []
+                for img_url in img_urls:
+                    single_urls, single_frames = self.handleSingleImage(img_url)
+                    urls.extend(single_urls)
+                    frames.extend(single_frames)
+            output.urls = urls
+            output.frames = frames
             return output
         finally:
             self.serviceInfo.state = ServiceReadyState
             self.state_lock.release()
+
+    def handleSingleImage(self, img_url):
+        img_name, img_path = download_file(img_url)
+        unique_id = str(uuid.uuid4())
+        output_path = f"temp/{img_name}_{unique_id}/"
+        try:
+            os.makedirs(output_path, exist_ok=True)
+            print(f"Folder '{output_path}' created successfully.")
+
+            yolo_arg = YoloArg(img_path=img_path, save_path=output_path)
+            frames = call_yolo(yolo_arg)
+            output_img_path = find_any_file(output_path)
+
+            urls = [self.objectStorageService.upload_object(output_img_path)]
+            return urls, frames
+        finally:
+            if os.path.exists(img_path):
+                try:
+                    os.remove(img_path)
+                    print(f'File {img_path} deleted successfully.')
+                except OSError as e:
+                    print(f'Error deleting file {img_path}: {e}')
+            shutil.rmtree(output_path)
+            print(f"Folder '{output_path}' deleted successfully.")
