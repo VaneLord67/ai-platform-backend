@@ -1,14 +1,13 @@
 import os
 import shutil
 import threading
-import time
 import uuid
 
 from nameko.events import event_handler, BROADCAST, SERVICE_POOL
 from nameko.rpc import rpc, RpcProxy
 
 from ais.yolo import YoloArg, call_yolo
-from common.util import connect_to_database, download_file, find_any_file
+from common.util import connect_to_database, download_file, find_any_file, generate_video, get_filename_and_ext
 from microservice.object_storage import ObjectStorageService
 from microservice.redis_storage import RedisStorage
 from model.ai_model import AIModel
@@ -29,7 +28,7 @@ def initStateInfo():
     model.field = "检测"
     model.hyperparameters = [hp_batch_size]
     model.name = "yoloV8"
-    model.support_input = [SINGLE_PICTURE_URL_TYPE, MULTIPLE_PICTURE_URL_TYPE]
+    model.support_input = [SINGLE_PICTURE_URL_TYPE, MULTIPLE_PICTURE_URL_TYPE, VIDEO_URL_TYPE]
 
     serviceInfo.model = model
     return serviceInfo
@@ -94,12 +93,47 @@ class DetectionService:
                     single_urls, single_frames = self.handleSingleImage(img_url)
                     urls.extend(single_urls)
                     frames.extend(single_frames)
+            elif supportInput.type == VIDEO_URL_TYPE:
+                video_url = supportInput.value
+                urls, frames = self.handleVideo(video_url)
             output.urls = urls
             output.frames = frames
             return output
         finally:
             self.serviceInfo.state = ServiceReadyState
             self.state_lock.release()
+
+    def handleVideo(self, video_url):
+        video_name, video_path = download_file(video_url)
+        unique_id = str(uuid.uuid4())
+        output_path = f"temp/{video_name}_{unique_id}/"
+        output_video_path = f"temp/output_{video_name}"
+        try:
+            os.makedirs(output_path, exist_ok=True)
+            print(f"Folder '{output_path}' created successfully.")
+
+            yolo_arg = YoloArg(video_path=video_path, save_path=output_path)
+            frames = call_yolo(yolo_arg)
+
+            generate_video(output_video_path=output_video_path, folder_path=output_path)
+
+            urls = [self.objectStorageService.upload_object(output_video_path)]
+            return urls, frames
+        finally:
+            if os.path.exists(video_path):
+                try:
+                    os.remove(video_path)
+                    print(f'File {video_path} deleted successfully.')
+                except OSError as e:
+                    print(f'Error deleting file {video_path}: {e}')
+            if os.path.exists(output_video_path):
+                try:
+                    os.remove(output_video_path)
+                    print(f'File {output_video_path} deleted successfully.')
+                except OSError as e:
+                    print(f'Error deleting file {output_video_path}: {e}')
+            shutil.rmtree(output_path)
+            print(f"Folder '{output_path}' deleted successfully.")
 
     def handleSingleImage(self, img_url):
         img_name, img_path = download_file(img_url)

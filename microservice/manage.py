@@ -45,8 +45,10 @@ class ManageService:
 
     @rpc
     def run_service(self, service_name):
-        service_name = service_name.replace("_service", "")
-        print(f"start a {service_name} instance...")
-        subprocess.Popen(["start", "nameko", "run", f"microservice.{service_name}"], shell=True)
+        module_name = service_name.replace("_service", "")
+        print(f"start a {module_name} instance...")
+        subprocess.Popen(["start", "nameko", "run",
+                          f"microservice.{module_name}:{service_name.title().replace('_', '')}"],
+                         shell=True)
         # subprocess.Popen([r"D:\Anaconda3\envs\ai-platform\python.exe", r"microservice\demo.py"],
         #                  stdout=subprocess.DEVNULL)

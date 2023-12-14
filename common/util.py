@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 from typing import Any
 from urllib.parse import urlparse, unquote
 
+import cv2
 import jwt
 import mysql.connector
 import requests
@@ -144,6 +145,26 @@ def find_any_file(folder_path):
             return file_path  # 返回第一个找到的文件路径
 
     return None  # 如果未找到任何文件，返回None
+
+
+def generate_video(output_video_path, folder_path):
+    img_paths = []
+    fps = 1.0
+    for root, dirs, files in os.walk(folder_path):
+        for file_name in files:
+            file_path = os.path.join(root, file_name)
+            img_paths.append(file_path)
+    if len(img_paths) == 0:
+        return
+    first_frame = cv2.imread(img_paths[0])
+    height, width, layers = first_frame.shape
+    # 创建视频对象
+    video = cv2.VideoWriter(output_video_path, cv2.VideoWriter_fourcc(*'avc1'), fps, (width, height))
+    # 将图片逐一写入视频
+    for img_path in img_paths:
+        video.write(cv2.imread(img_path))
+    # 保存视频
+    video.release()
 
 
 def get_filename_and_ext(file_path):

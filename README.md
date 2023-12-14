@@ -9,6 +9,7 @@ flask
 flask-cors
 flask_nameko
 nameko
+opencv
 minio
 redis
 

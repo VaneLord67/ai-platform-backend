@@ -14,6 +14,8 @@ class YoloArg:
         self.is_show = is_show
         self.save_path = save_path
 
+        if self.img_path and self.video_path:
+            raise ValueError("img_path and video_path both has value")
         if not self.img_path and not self.video_path:
             raise ValueError("img_path or video_path should not be None")
 
@@ -50,6 +52,10 @@ if __name__ == '__main__':
     # --img=E:/GraduationDesign/tensorrt-alpha/data/6406402.jpg
     # --show
     # --savePath=E:/GraduationDesign/tensorOutput
-    yoloArg = YoloArg(img_path=r"E:/GraduationDesign/tensorrt-alpha/data/6406402.jpg")
+    # yoloArg = YoloArg(img_path=r"E:/GraduationDesign/tensorrt-alpha/data/6406402.jpg")
+    # frames = call_yolo(yoloArg)
+    # print(frames)
+
+    yoloArg = YoloArg(video_path=r"E:/GraduationDesign/tensorrt-alpha/data/people.mp4", is_show=True)
     frames = call_yolo(yoloArg)
     print(frames)
