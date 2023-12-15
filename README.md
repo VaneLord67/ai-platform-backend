@@ -31,6 +31,7 @@ nameko run microservice.manage:ManageService
 nameko run microservice.object_storage:ObjectStorageService
 nameko run microservice.detection:DetectionService
 nameko run microservice.user:UserService
+nameko run microservice.monitor:MonitorService
 
 # yolo
 ```cmd

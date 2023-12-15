@@ -1,3 +1,5 @@
+import json
+
 from flask import request, Blueprint
 
 from common.api_response import APIResponse
@@ -16,5 +18,5 @@ def call():
         response = APIResponse.fail()
     else:
         response = APIResponse.success_with_data(output)
-    return response.__str__()
+    return json.loads(response.__str__())
 

@@ -1,8 +1,8 @@
 from nameko.rpc import rpc
 
-from common.model import User
 from common.util import generate_jwt
 from microservice.mysql_storage import MysqlStorage
+from model.user import User
 
 
 class UserService:
@@ -14,7 +14,7 @@ class UserService:
 
     @rpc
     def register(self, user_json) -> str:
-        user = User.from_json(user_json)
+        user = User().from_json(user_json)
         username = user.username
         password = user.password
         conn = self.mysql_storage.conn
@@ -39,7 +39,7 @@ class UserService:
 
     @rpc
     def login(self, user_json) -> str:
-        user = User.from_json(user_json)
+        user = User().from_json(user_json)
         username = user.username
         password = user.password
         conn = self.mysql_storage.conn

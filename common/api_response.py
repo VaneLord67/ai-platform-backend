@@ -20,6 +20,9 @@ class APIResponse(JsonBase):
             return {'code': self.code, 'message': self.message, 'data': dict_list}
         return {'code': self.code, 'message': self.message, 'data': self.data}
 
+    def flask_response(self):
+        return json.loads(self.__str__())
+
     @staticmethod
     def success():
         return APIResponse(code=1, message="success")
