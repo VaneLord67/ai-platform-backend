@@ -2,12 +2,13 @@ import os
 import shutil
 import threading
 import uuid
+from datetime import timedelta
 
-from nameko.events import event_handler, BROADCAST, SERVICE_POOL
+from nameko.events import event_handler, BROADCAST
 from nameko.rpc import rpc, RpcProxy
 
 from ais.yolo import YoloArg, call_yolo
-from common.util import connect_to_database, download_file, find_any_file, generate_video, get_filename_and_ext
+from common.util import connect_to_database, download_file, find_any_file, generate_video
 from microservice.object_storage import ObjectStorageService
 from microservice.redis_storage import RedisStorage
 from model.ai_model import AIModel
@@ -62,10 +63,18 @@ class DetectionService:
         print("receive close event")
         raise KeyboardInterrupt
 
-    @event_handler("manage_service", name + "close_one_event", handler_type=SERVICE_POOL, reliable_delivery=False)
+    @event_handler("manage_service", name + "close_one_event", handler_type=BROADCAST, reliable_delivery=False)
     def close_one_event_handler(self, payload):
         print("receive close one event")
-        raise KeyboardInterrupt
+        close_unique_id = payload
+        redis_client = self.redis_storage.client
+        print(f"close_unique_id = {close_unique_id}")
+        lock_ok = redis_client.set(close_unique_id, "locked", ex=timedelta(minutes=1), nx=True)
+        if lock_ok:
+            print("get close lock, raise KeyboardInterrupt...")
+            raise KeyboardInterrupt
+        else:
+            print("close lock failed, continue running...")
 
     @rpc
     def detectRPCHandler(self, args: dict):

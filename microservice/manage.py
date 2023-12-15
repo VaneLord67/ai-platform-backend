@@ -1,5 +1,6 @@
 import subprocess
 import time
+import uuid
 
 from nameko.events import EventDispatcher
 from nameko.rpc import rpc
@@ -41,7 +42,8 @@ class ManageService:
     @rpc
     def close_one_instance(self, service_name):
         print(f"close one instance: {service_name}")
-        self.dispatch(f"{service_name}close_one_event", service_name)
+        close_unique_id = str(uuid.uuid4())
+        self.dispatch(f"{service_name}close_one_event", close_unique_id)
 
     @rpc
     def run_service(self, service_name):
