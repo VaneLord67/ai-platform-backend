@@ -1,12 +1,15 @@
+from typing import List
+
 from ais import app_yolo
 
 from model.box import Box
+from model.hyperparameter import Hyperparameter
 
 
 class YoloArg:
     def __init__(self, img_path=None, video_path=None, is_show=False,
                  save_path=r'E:/GraduationDesign/tensorOutput/',
-                 size=640, batch_size=1):
+                 size=640, batch_size=1, hyperparameters=None):
         self.size = size
         self.batch_size = batch_size
         self.img_path = img_path
@@ -14,10 +17,20 @@ class YoloArg:
         self.is_show = is_show
         self.save_path = save_path
 
+        if hyperparameters:
+            self.wire_hyperparameters(hyperparameters)
+
         if self.img_path and self.video_path:
             raise ValueError("img_path and video_path both has value")
         if not self.img_path and not self.video_path:
             raise ValueError("img_path or video_path should not be None")
+
+    def wire_hyperparameters(self, hyperparameters: List[Hyperparameter]):
+        for hp in hyperparameters:
+            if hp.name == 'size':
+                self.size = hp.value
+            if hp.name == 'batch_size':
+                self.batch_size = hp.value
 
 
 def call_yolo(yoloArg: YoloArg):

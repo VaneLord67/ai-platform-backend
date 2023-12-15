@@ -25,9 +25,13 @@ def initStateInfo():
     hp_batch_size.type = "integer"
     hp_batch_size.name = "batch_size"
 
+    hp_size = Hyperparameter()
+    hp_size.type = "integer"
+    hp_size.name = "size"
+
     model = AIModel()
     model.field = "检测"
-    model.hyperparameters = [hp_batch_size]
+    model.hyperparameters = [hp_batch_size, hp_size]
     model.name = "yoloV8"
     model.support_input = [SINGLE_PICTURE_URL_TYPE, MULTIPLE_PICTURE_URL_TYPE, VIDEO_URL_TYPE]
 
@@ -81,9 +85,9 @@ class DetectionService:
         self.state_lock.acquire()
         try:
             self.serviceInfo.state = ServiceRunningState
+            hyperparameters = []
             if 'hyperparameters' in args:
                 hps = args['hyperparameters']
-                hyperparameters = []
                 for hp in hps:
                     hyperparameters.append(Hyperparameter().from_dict(hp))
 
@@ -93,18 +97,18 @@ class DetectionService:
             frames = []
             if supportInput.type == SINGLE_PICTURE_URL_TYPE:
                 img_url = supportInput.value
-                urls, frames = self.handleSingleImage(img_url)
+                urls, frames = self.handleSingleImage(img_url, hyperparameters)
             elif supportInput.type == MULTIPLE_PICTURE_URL_TYPE:
                 img_urls = supportInput.value
                 urls = []
                 frames = []
                 for img_url in img_urls:
-                    single_urls, single_frames = self.handleSingleImage(img_url)
+                    single_urls, single_frames = self.handleSingleImage(img_url, hyperparameters)
                     urls.extend(single_urls)
                     frames.extend(single_frames)
             elif supportInput.type == VIDEO_URL_TYPE:
                 video_url = supportInput.value
-                urls, frames = self.handleVideo(video_url)
+                urls, frames = self.handleVideo(video_url, hyperparameters)
             output.urls = urls
             output.frames = frames
             return output
@@ -112,7 +116,7 @@ class DetectionService:
             self.serviceInfo.state = ServiceReadyState
             self.state_lock.release()
 
-    def handleVideo(self, video_url):
+    def handleVideo(self, video_url, hyperparameters):
         video_name, video_path = download_file(video_url)
         unique_id = str(uuid.uuid4())
         output_path = f"temp/{video_name}_{unique_id}/"
@@ -121,7 +125,7 @@ class DetectionService:
             os.makedirs(output_path, exist_ok=True)
             print(f"Folder '{output_path}' created successfully.")
 
-            yolo_arg = YoloArg(video_path=video_path, save_path=output_path)
+            yolo_arg = YoloArg(video_path=video_path, save_path=output_path, hyperparameters=hyperparameters)
             frames = call_yolo(yolo_arg)
 
             generate_video(output_video_path=output_video_path, folder_path=output_path)
@@ -144,7 +148,7 @@ class DetectionService:
             shutil.rmtree(output_path)
             print(f"Folder '{output_path}' deleted successfully.")
 
-    def handleSingleImage(self, img_url):
+    def handleSingleImage(self, img_url, hyperparameters):
         img_name, img_path = download_file(img_url)
         unique_id = str(uuid.uuid4())
         output_path = f"temp/{img_name}_{unique_id}/"
@@ -152,7 +156,7 @@ class DetectionService:
             os.makedirs(output_path, exist_ok=True)
             print(f"Folder '{output_path}' created successfully.")
 
-            yolo_arg = YoloArg(img_path=img_path, save_path=output_path)
+            yolo_arg = YoloArg(img_path=img_path, save_path=output_path, hyperparameters=hyperparameters)
             frames = call_yolo(yolo_arg)
             output_img_path = find_any_file(output_path)
 
