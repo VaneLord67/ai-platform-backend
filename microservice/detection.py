@@ -25,10 +25,12 @@ def initStateInfo():
     hp_batch_size = Hyperparameter()
     hp_batch_size.type = "integer"
     hp_batch_size.name = "batch_size"
+    hp_batch_size.default = 1
 
     hp_size = Hyperparameter()
     hp_size.type = "integer"
     hp_size.name = "size"
+    hp_size.default = 640
 
     model = AIModel()
     model.field = "检测"
