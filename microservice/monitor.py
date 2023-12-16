@@ -1,4 +1,5 @@
 import json
+from datetime import datetime
 
 from nameko.rpc import rpc
 
@@ -27,7 +28,7 @@ class MonitorService:
         cursor = conn.cursor()
         # 构建查询语句
         query = """
-                    SELECT id, user_id, method, path, status_code, duration, response_json
+                    SELECT id, user_id, method, path, status_code, duration, response_json, time
                     FROM request_log ORDER BY id DESC
                     LIMIT %s OFFSET %s
                 """
@@ -46,6 +47,7 @@ class MonitorService:
             status_code = r[4]
             duration = r[5]
             response_json = r[6]
+            time: datetime = r[7]
             rl = RequestLog()
             rl.id = id
             rl.user_id = user_id
@@ -54,6 +56,7 @@ class MonitorService:
             rl.status_code = status_code
             rl.duration = duration
             rl.response_json = response_json
+            rl.time = time.timestamp()
             requestLogs.append(rl)
         # 关闭连接
         cursor.close()
@@ -64,8 +67,8 @@ class MonitorService:
         conn = self.mysql_storage.conn
         cursor = conn.cursor()
         insert_sql = """
-               INSERT INTO request_log (user_id, method, path, status_code, duration, response_json)
-               VALUES (%s, %s, %s, %s, %s, %s)
+               INSERT INTO request_log (user_id, method, path, status_code, duration, response_json, time)
+               VALUES (%s, %s, %s, %s, %s, %s, %s)
            """
         cursor.execute(insert_sql, (
             log_data['user_id'],
@@ -74,6 +77,7 @@ class MonitorService:
             log_data['status_code'],
             log_data['duration'],
             json.dumps(log_data['response_json']) if log_data['response_json'] else "",
+            log_data['time'],
         ))
         conn.commit()
         cursor.close()

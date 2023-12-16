@@ -9,6 +9,7 @@ from nameko.rpc import rpc, RpcProxy
 
 from ais.yolo import YoloArg, call_yolo
 from common.util import connect_to_database, download_file, find_any_file, generate_video
+from microservice.load_dependency import LoadDependency
 from microservice.object_storage import ObjectStorageService
 from microservice.redis_storage import RedisStorage
 from model.ai_model import AIModel

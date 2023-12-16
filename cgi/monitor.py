@@ -1,5 +1,3 @@
-import json
-
 from flask import request, Blueprint
 
 from common.api_response import APIResponse
@@ -26,3 +24,8 @@ def get_monitor_data_page():
     }
     return APIResponse.success_with_data(payload).flask_response()
 
+
+@monitor_bp.route('/load', methods=['GET'])
+def get_load():
+    load = rpc.manage_service.get_load()
+    return APIResponse.success_with_data(load).flask_response()

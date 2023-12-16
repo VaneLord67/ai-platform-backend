@@ -1,4 +1,5 @@
 import time
+from datetime import datetime
 
 from flask import g, request
 
@@ -43,9 +44,10 @@ def after_request(response):
         'path': request.path,
         'status_code': response.status_code,
         'duration': request_duration,
-        'response_json': response.get_json()
+        'response_json': response.get_json(),
+        'time': datetime.now(),
     }
-    if request.method != 'OPTIONS':
+    if request.method != 'OPTIONS' and request.path != '/monitor/page':
         rpc.monitor_service.insertRequestLog.call_async(log_data)
     # app.logger.info(log_data)
 

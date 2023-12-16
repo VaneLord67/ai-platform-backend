@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from common.util import JsonBase
 
 
@@ -11,6 +13,7 @@ class RequestLog(JsonBase):
         self.status_code: int = 0
         self.duration: float = 0
         self.response_json: str = ""
+        self.time: int = 0
 
     def __json__(self):
         return self.__str__()

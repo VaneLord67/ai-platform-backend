@@ -5,6 +5,7 @@ import uuid
 from nameko.events import EventDispatcher
 from nameko.rpc import rpc
 
+from microservice.load_dependency import LoadDependency
 from microservice.redis_storage import RedisStorage
 from model.service_info import ServiceInfo
 
@@ -14,6 +15,12 @@ class ManageService:
 
     dispatch = EventDispatcher()
     redis_storage = RedisStorage()
+    load_dependency = LoadDependency()
+
+    @rpc
+    def get_load(self):
+        load = self.load_dependency.get_load()
+        return load
 
     @rpc
     def get_detection_services(self):
@@ -28,11 +35,6 @@ class ManageService:
             serviceInfo = ServiceInfo().from_json(service_info_str)
             services.append(serviceInfo)
         return services
-
-
-    @rpc
-    def hello(self):
-        return "hello!"
 
     @rpc
     def close_all_instance(self, service_name):
