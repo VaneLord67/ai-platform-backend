@@ -1,5 +1,5 @@
 {
-  "redis_url": "redis://localhost:6379/11",
+  "redis_url": "redis://localhost:6379/0",
 
   "mysql_host": "localhost",
   "mysql_port": "3307",
