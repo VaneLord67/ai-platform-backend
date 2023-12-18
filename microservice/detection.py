@@ -1,3 +1,4 @@
+import multiprocessing
 import os
 import shutil
 import threading
@@ -9,7 +10,6 @@ from nameko.rpc import rpc, RpcProxy
 
 from ais.yolo import YoloArg, call_yolo
 from common.util import connect_to_database, download_file, find_any_file, generate_video
-from microservice.load_dependency import LoadDependency
 from microservice.object_storage import ObjectStorageService
 from microservice.redis_storage import RedisStorage
 from model.ai_model import AIModel
@@ -36,7 +36,7 @@ def initStateInfo():
     model.field = "检测"
     model.hyperparameters = [hp_batch_size, hp_size]
     model.name = "yoloV8"
-    model.support_input = [SINGLE_PICTURE_URL_TYPE, MULTIPLE_PICTURE_URL_TYPE, VIDEO_URL_TYPE]
+    model.support_input = [SINGLE_PICTURE_URL_TYPE, MULTIPLE_PICTURE_URL_TYPE, VIDEO_URL_TYPE, CAMERA_TYPE]
 
     serviceInfo.model = model
     return serviceInfo
@@ -45,6 +45,7 @@ def initStateInfo():
 class DetectionService:
     name = "detection_service"
 
+    unique_id = str(uuid.uuid4())
     serviceInfo = initStateInfo()
     state_lock = threading.Lock()
 
@@ -86,6 +87,8 @@ class DetectionService:
     @rpc
     def detectRPCHandler(self, args: dict):
         self.state_lock.acquire()
+        supportInput = SupportInput().from_dict(args['supportInput'])
+
         try:
             self.serviceInfo.state = ServiceRunningState
             hyperparameters = []
@@ -93,8 +96,6 @@ class DetectionService:
                 hps = args['hyperparameters']
                 for hp in hps:
                     hyperparameters.append(Hyperparameter().from_dict(hp))
-
-            supportInput = SupportInput().from_dict(args['supportInput'])
             output = DetectionOutput()
             urls = []
             frames = []
@@ -112,12 +113,42 @@ class DetectionService:
             elif supportInput.type == VIDEO_URL_TYPE:
                 video_url = supportInput.value
                 urls, frames = self.handleVideo(video_url, hyperparameters)
+            elif supportInput.type == CAMERA_TYPE:
+                camera_id = supportInput.value
+                stop_signal_key = args['stopSignalKey']
+                camera_data_queue_name = args['queueName']
+                self.redis_storage.client.expire(name=camera_data_queue_name, time=timedelta(hours=24))
+                output.unique_id = self.unique_id
+                multiprocessing.Process(target=DetectionService.handleCamera,
+                                        args=[camera_id, hyperparameters, stop_signal_key,
+                                              camera_data_queue_name]).start()
+                # self.handleCamera(camera_id, hyperparameters, stop_signal_key, camera_data_queue_name)
             output.urls = urls
             output.frames = frames
             return output
         finally:
+            if supportInput.type != CAMERA_TYPE:
+                self.serviceInfo.state = ServiceReadyState
+            self.state_lock.release()
+
+    @event_handler("manage_service", name + "state_change", handler_type=BROADCAST, reliable_delivery=False)
+    def cameraStateChangeHandler(self, payload):
+        if self.unique_id == payload:
+            self.state_lock.acquire()
             self.serviceInfo.state = ServiceReadyState
             self.state_lock.release()
+
+    @staticmethod
+    def handleCamera(camera_id, hyperparameters, stop_signal_key, camera_data_queue_name):
+        yolo_arg = YoloArg(camera_id=camera_id, stop_signal_key=stop_signal_key, queue_name=camera_data_queue_name,
+                           is_show=True, save_path=None, hyperparameters=hyperparameters)
+        call_yolo(yolo_arg)
+
+    @rpc
+    def stopCamera(self, stop_signal_key):
+        client = self.redis_storage.client
+        print(f"set {stop_signal_key}")
+        client.set(stop_signal_key, "1", ex=timedelta(hours=1))
 
     def handleVideo(self, video_url, hyperparameters):
         video_name, video_path = download_file(video_url)

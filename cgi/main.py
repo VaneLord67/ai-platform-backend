@@ -5,8 +5,8 @@ from flask import g, request
 
 from common.util import decode_jwt, connect_to_database
 from model.user import User
-from . import app
-from .singleton import rpc
+from cgi import app, socketio
+from cgi.singleton import rpc
 
 rpc.init_app(app)
 
@@ -52,3 +52,8 @@ def after_request(response):
     # app.logger.info(log_data)
 
     return response
+
+
+if __name__ == '__main__':
+    # print("start socketio")
+    socketio.run(app, host='0.0.0.0', debug=False, port=8086)

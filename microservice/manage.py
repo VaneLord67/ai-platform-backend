@@ -20,7 +20,11 @@ class ManageService:
     @rpc
     def get_load(self):
         load = self.load_dependency.get_load()
-        return load
+        return
+
+    @rpc
+    def change_state_to_ready(self, service_name, service_unique_id):
+        self.dispatch(f"{service_name}state_change", service_unique_id)
 
     @rpc
     def get_detection_services(self):

@@ -8,7 +8,8 @@
 ```text
 flask
 flask-cors 
-flask_nameko 
+flask_nameko
+Flask-SocketIO
 nameko 
 opencv 
 minio 
