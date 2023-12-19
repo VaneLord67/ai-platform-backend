@@ -18,7 +18,7 @@ def login():
 @user_bp.route('/register', methods=['POST'])
 def register():
     json_data = request.get_json()
-    user = User().from_json(json_data)
+    user = User().from_dict(json_data)
     jwt = rpc.user_service.register(user)
     response = APIResponse.success_with_data(jwt) if jwt != "" else APIResponse.fail()
     return response.to_dict()

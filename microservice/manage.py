@@ -41,6 +41,19 @@ class ManageService:
         return services
 
     @rpc
+    def get_services(self, service_name):
+        services = []
+        service_list_key = f"{service_name}_info"
+        self.redis_storage.client.delete(service_list_key)
+        self.dispatch(f"{service_name}state_report", service_list_key)
+        time.sleep(0.5)
+        list_elements = self.redis_storage.client.lrange(service_list_key, 0, -1)
+        for service_info_str in list_elements:
+            serviceInfo = ServiceInfo().from_json(service_info_str)
+            services.append(serviceInfo)
+        return services
+
+    @rpc
     def close_all_instance(self, service_name):
         print(f"close all instance: {service_name}")
         self.dispatch(f"{service_name}close_event", service_name)
@@ -58,5 +71,3 @@ class ManageService:
         subprocess.Popen(["start", "nameko", "run",
                           f"microservice.{module_name}:{service_name.title().replace('_', '')}"],
                          shell=True)
-        # subprocess.Popen([r"D:\Anaconda3\envs\ai-platform\python.exe", r"microservice\demo.py"],
-        #                  stdout=subprocess.DEVNULL)

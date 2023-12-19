@@ -38,6 +38,7 @@ python -m flask run --port=8086
 nameko run microservice.manage:ManageService
 nameko run microservice.object_storage:ObjectStorageService
 nameko run microservice.detection:DetectionService
+nameko run microservice.track:TrackService
 nameko run microservice.user:UserService
 nameko run microservice.monitor:MonitorService
 ```
