@@ -6,6 +6,7 @@ from flask_socketio import SocketIO
 
 from common.api_response import APIResponse
 from model.support_input import CAMERA_TYPE
+from model.track_result import TrackResult
 from .singleton import rpc
 from .socketio_namespace import DynamicNamespace
 
@@ -28,14 +29,21 @@ def call():
         track_socketio.on_namespace(dynamicNamespace)
         return APIResponse.success_with_data(namespace).flask_response()
     else:
-        output: str = rpc.track_service.track(json_data)
-        output_dict = json.loads(output)
+        output_dict: dict = rpc.track_service.track(json_data)
         url = output_dict['url']
+        frame_strs = output_dict['frames']
+        frames = []
+        for frame_str in frame_strs:
+            frames.append(TrackResult().from_json(frame_str))
+        data = {
+            'frames': frames,
+            'url': url,
+        }
         response: APIResponse
         if len(url) == 0:
             response = APIResponse.fail()
         else:
-            response = APIResponse.success_with_data(output_dict)
+            response = APIResponse.success_with_data(data)
         return response.flask_response()
 
 

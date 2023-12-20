@@ -1,5 +1,4 @@
 import base64
-import multiprocessing
 import os
 import shutil
 import threading
@@ -11,12 +10,10 @@ from nameko.events import event_handler, BROADCAST
 from nameko.rpc import rpc, RpcProxy
 
 from ais.opencv_track import TrackArg, call_track
-from ais.yolo import YoloArg, call_yolo
-from common.util import connect_to_database, download_file, find_any_file, generate_video
+from common.util import connect_to_database, download_file, generate_video, get_video_fps
 from microservice.object_storage import ObjectStorageService
 from microservice.redis_storage import RedisStorage
 from model.ai_model import AIModel
-from model.detection_output import DetectionOutput
 from model.hyperparameter import Hyperparameter
 from model.service_info import ServiceInfo, ServiceReadyState, ServiceRunningState
 from model.support_input import *
@@ -25,9 +22,29 @@ from model.support_input import *
 def initStateInfo():
     serviceInfo = ServiceInfo()
 
+    hp_roi_x = Hyperparameter()
+    hp_roi_x.type = 'integer'
+    hp_roi_x.name = 'roi_x'
+    hp_roi_x.default = 0
+
+    hp_roi_y = Hyperparameter()
+    hp_roi_y.type = 'integer'
+    hp_roi_y.name = 'roi_y'
+    hp_roi_y.default = 0
+
+    hp_roi_width = Hyperparameter()
+    hp_roi_width.type = 'integer'
+    hp_roi_width.name = 'roi_width'
+    hp_roi_width.default = 0
+
+    hp_roi_height = Hyperparameter()
+    hp_roi_height.type = 'integer'
+    hp_roi_height.name = 'roi_height'
+    hp_roi_height.default = 0
+
     model = AIModel()
     model.field = "跟踪"
-    model.hyperparameters = []
+    model.hyperparameters = [hp_roi_x, hp_roi_y, hp_roi_width, hp_roi_height]
     model.name = "MIL"
     model.support_input = [VIDEO_URL_TYPE]
 
@@ -105,6 +122,7 @@ class TrackService:
             self.state_lock.release()
 
     def handleVideo(self, video_url, hyperparameters):
+        video_fps = get_video_fps(video_url)
         video_name, video_path = download_file(video_url)
         unique_id = str(uuid.uuid4())
         output_path = f"temp/{video_name}_{unique_id}/"
@@ -116,9 +134,10 @@ class TrackService:
             arg = TrackArg(video_path=video_path, save_path=output_path, hyperparameters=hyperparameters)
             frames = call_track(arg)
 
-            generate_video(output_video_path=output_video_path, folder_path=output_path)
+            generate_video(output_video_path=output_video_path, folder_path=output_path, fps=video_fps)
 
             url = self.objectStorageService.upload_object(output_video_path)
+            print("upload video:", url)
             return url, frames
         finally:
             if os.path.exists(video_path):
@@ -137,12 +156,13 @@ class TrackService:
             print(f"Folder '{output_path}' deleted successfully.")
 
     @rpc
-    def get_first_frame(self, video_url):
+    def get_first_frame(self, video_url: str):
+        video_url = video_url.strip()
         # 读取视频文件
         cap = cv2.VideoCapture(video_url)
         # 检查视频是否成功打开
         if not cap.isOpened():
-            print("Error: Could not open video file.")
+            print("Error: Could not open video file: ", video_url)
             return None
         # 读取第一帧
         ret, frame = cap.read()

@@ -1,5 +1,6 @@
 import json
 import os
+import re
 from datetime import datetime, timedelta
 from typing import Any
 from urllib.parse import urlparse, unquote
@@ -147,9 +148,16 @@ def find_any_file(folder_path):
     return None  # 如果未找到任何文件，返回None
 
 
-def generate_video(output_video_path, folder_path):
+def extract_number_from_path(path):
+    """从路径中提取数字部分作为排序关键字"""
+    match = re.search(r'_(\d+)\.jpg', path)
+    if match:
+        return int(match.group(1))
+    return 0  # 如果没有匹配到数字，返回0或其他默认值，确保不会出现错误
+
+
+def generate_video(output_video_path, folder_path, fps=1.0):
     img_paths = []
-    fps = 1.0
     for root, dirs, files in os.walk(folder_path):
         for file_name in files:
             file_path = os.path.join(root, file_name)
@@ -161,12 +169,33 @@ def generate_video(output_video_path, folder_path):
     # 创建视频对象
     video = cv2.VideoWriter(output_video_path, cv2.VideoWriter_fourcc(*'avc1'), fps, (width, height))
     # 将图片逐一写入视频
+    img_paths = sorted(img_paths, key=extract_number_from_path)
     for img_path in img_paths:
+        # print(f"img_path = {img_path}")
         video.write(cv2.imread(img_path))
     # 保存视频
     video.release()
 
 
+def get_video_fps(video_src: str):
+    video_src = video_src.strip()
+    # 打开视频文件
+    cap = cv2.VideoCapture(video_src)
+    # 检查视频是否成功打开
+    if not cap.isOpened():
+        print("Error: Could not open video file:", video_src)
+        return None
+    # 获取视频帧率
+    fps = cap.get(cv2.CAP_PROP_FPS)
+    return fps
+
+
 def get_filename_and_ext(file_path):
     file_name, file_extension = os.path.splitext(os.path.basename(file_path))
     return file_name, file_extension
+
+
+if __name__ == '__main__':
+    folder_path = r"E:\GraduationDesign\ai-platform-backend\temp\track_test_tiny.mp4_7fe5e0b7-ec83-4fe8-be9c-ae7bade86498"
+    generate_video(output_video_path="temp/generate_test.mp4",
+                   folder_path=folder_path, fps=30)

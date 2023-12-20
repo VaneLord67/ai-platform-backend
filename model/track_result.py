@@ -2,7 +2,7 @@ from common.util import JsonBase
 
 
 class TrackResult(JsonBase):
-    def __init__(self, x, y, width, height):
+    def __init__(self, x=None, y=None, width=None, height=None):
         super().__init__()
         self.x: int = x
         self.y: int = y
