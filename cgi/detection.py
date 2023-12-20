@@ -13,7 +13,7 @@ from .singleton import rpc
 from .socketio_namespace import DynamicNamespace
 
 detection_bp = Blueprint('detection', __name__, url_prefix='/model/detection')
-socketio = SocketIO()
+detection_socketio = SocketIO()
 # socketio.on_namespace(DynamicNamespace("/test", "test_uuid"))
 
 
@@ -30,7 +30,7 @@ def call():
         output: str = rpc.detection_service.detectRPCHandler(json_data)
         service_unique_id = json.loads(output)['unique_id']
         dynamicNamespace.service_unique_id = service_unique_id
-        socketio.on_namespace(dynamicNamespace)
+        detection_socketio.on_namespace(dynamicNamespace)
         return APIResponse.success_with_data(namespace).flask_response()
     else:
         output_dict = rpc.detection_service.detectRPCHandler(json_data)

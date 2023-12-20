@@ -18,7 +18,7 @@ class YoloArg:
         self.video_path = video_path
         self.is_show = is_show
         self.save_path = save_path
-        self.camara_id = camera_id
+        self.camera_id = camera_id
         self.queue_name = queue_name
         self.stop_signal_key = stop_signal_key
 
@@ -30,11 +30,11 @@ class YoloArg:
             cnt += 1
         if self.video_path is not None:
             cnt += 1
-        if self.camara_id is not None:
+        if self.camera_id is not None:
             cnt += 1
         if cnt != 1:
-            raise ValueError("输入为空或不唯一", self.img_path, self.video_path, self.camara_id)
-        if self.camara_id is not None and self.queue_name is None and self.stop_signal_key is None:
+            raise ValueError("输入为空或不唯一", self.img_path, self.video_path, self.camera_id)
+        if self.camera_id is not None and self.queue_name is None and self.stop_signal_key is None:
             raise ValueError("摄像头输入必须附带输出队列key和停止信号key")
 
     def wire_hyperparameters(self, hyperparameters: List[Hyperparameter]):
@@ -55,8 +55,8 @@ def call_yolo(yoloArg: YoloArg):
         args.append(f"--img={yoloArg.img_path}")
     if yoloArg.video_path is not None:
         args.append(f"--video={yoloArg.video_path}")
-    if yoloArg.camara_id is not None:
-        args.append(f"--cam_id={yoloArg.camara_id}")
+    if yoloArg.camera_id is not None:
+        args.append(f"--cam_id={yoloArg.camera_id}")
     if yoloArg.queue_name:
         args.append(f"--queueName={yoloArg.queue_name}")
     if yoloArg.stop_signal_key:
