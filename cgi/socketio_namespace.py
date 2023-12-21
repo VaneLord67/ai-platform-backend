@@ -5,10 +5,13 @@ from typing import Union
 import redis
 from flask_socketio import Namespace
 
+from ais.opencv_track import set_roi_to_redis
 from cgi.singleton import rpc
 from common.config import config
 from microservice.detection import DetectionService
 from microservice.recognition import RecognitionService
+from microservice.track import TrackService
+from model.track_result import TrackResult
 
 
 class DynamicNamespace(Namespace):
@@ -18,22 +21,29 @@ class DynamicNamespace(Namespace):
         self.service_name: str = service_name
         self.unique_id: str = unique_id
         self.stop_signal_key: str = unique_id + "_stop"
-        # self.stop_signal_key: str = "stop"
         self.queue_name: str = unique_id + "_queue_name"
+        # self.stop_signal_key: str = "stop"
         # self.queue_name: str = "my_queue"
         self.service_unique_id = service_unique_id
         self.redis_client: Union[redis.StrictRedis, None] = redis.StrictRedis.from_url(config.get("redis_url"))
 
+        if self.service_name == TrackService.name:
+            self.roi_key = unique_id + "_roi"
+
     def on_connect(self):
         print(f'Client connected to namespace: {self.namespace}, stop_key = {self.stop_signal_key}')
+
+    def on_roi_event(self, roi_data):
+        roi: TrackResult = TrackResult().from_json(roi_data)
+        set_roi_to_redis(roi, self.roi_key, self.redis_client)
 
     def on_camera_retrieve(self, data):
         client = self.redis_client
         _, queue_data = client.blpop([self.queue_name])
         if queue_data and queue_data != b'stop':
-            if self.service_name == RecognitionService.name:
+            if self.service_name in [RecognitionService.name, TrackService.name]:
                 self.recognition_service_handler(queue_data)
-            elif self.service_name == DetectionService.name:
+            elif self.service_name in [DetectionService.name]:
                 self.detection_service_handler(queue_data)
 
     def recognition_service_handler(self, queue_data):

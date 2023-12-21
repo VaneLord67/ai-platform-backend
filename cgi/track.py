@@ -1,18 +1,15 @@
-import json
 import uuid
 
 from flask import request, Blueprint
-from flask_socketio import SocketIO
 
 from common.api_response import APIResponse
-from microservice.detection import DetectionService
+from microservice.track import TrackService
 from model.support_input import CAMERA_TYPE
 from model.track_result import TrackResult
-from .singleton import rpc
+from .singleton import rpc, socketio
 from .socketio_namespace import DynamicNamespace
 
 track_bp = Blueprint('track', __name__, url_prefix='/model/track')
-track_socketio = SocketIO()
 
 
 @track_bp.route('/call', methods=['POST'])
@@ -21,13 +18,14 @@ def call():
     if json_data['supportInput']['type'] == CAMERA_TYPE:
         unique_id = str(uuid.uuid4())
         namespace = '/' + unique_id
-        dynamicNamespace = DynamicNamespace(namespace, unique_id, service_name=DetectionService.name)
+        dynamicNamespace = DynamicNamespace(namespace, unique_id, service_name=TrackService.name)
         json_data['stopSignalKey'] = dynamicNamespace.stop_signal_key
         json_data['queueName'] = dynamicNamespace.queue_name
-        output: str = rpc.detection_service.detectRPCHandler(json_data)
-        service_unique_id = json.loads(output)['unique_id']
+        json_data['roiKey'] = dynamicNamespace.roi_key
+        output_dict: dict = rpc.track_service.track(json_data)
+        service_unique_id = output_dict['unique_id']
         dynamicNamespace.service_unique_id = service_unique_id
-        track_socketio.on_namespace(dynamicNamespace)
+        socketio.on_namespace(dynamicNamespace)
         return APIResponse.success_with_data(namespace).flask_response()
     else:
         output_dict: dict = rpc.track_service.track(json_data)

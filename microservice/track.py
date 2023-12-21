@@ -1,4 +1,5 @@
 import base64
+import multiprocessing
 import os
 import shutil
 import threading
@@ -46,7 +47,7 @@ def initStateInfo():
     model.field = "跟踪"
     model.hyperparameters = [hp_roi_x, hp_roi_y, hp_roi_width, hp_roi_height]
     model.name = "MIL"
-    model.support_input = [VIDEO_URL_TYPE]
+    model.support_input = [VIDEO_URL_TYPE, CAMERA_TYPE]
 
     serviceInfo.model = model
     return serviceInfo
@@ -98,7 +99,6 @@ class TrackService:
     def track(self, args: dict):
         self.state_lock.acquire()
         supportInput = SupportInput().from_dict(args['supportInput'])
-
         try:
             self.serviceInfo.state = ServiceRunningState
             hyperparameters = []
@@ -111,15 +111,45 @@ class TrackService:
             if supportInput.type == VIDEO_URL_TYPE:
                 video_url = supportInput.value
                 url, frames = self.handleVideo(video_url, hyperparameters)
+            elif supportInput.type == CAMERA_TYPE:
+                camera_id = supportInput.value
+                stop_signal_key = args['stopSignalKey']
+                camera_data_queue_name = args['queueName']
+                roi_key = args['roiKey']
+                self.redis_storage.client.expire(name=camera_data_queue_name, time=timedelta(hours=24))
+                multiprocessing.Process(target=TrackService.handleCamera,
+                                        args=[camera_id, hyperparameters, stop_signal_key,
+                                              camera_data_queue_name, roi_key]).start()
             output = {
                 "url": url,
-                "frames": frames
+                "frames": frames,
+                "unique_id": self.unique_id
             }
             return output
         finally:
             if supportInput.type != CAMERA_TYPE:
                 self.serviceInfo.state = ServiceReadyState
             self.state_lock.release()
+
+    @event_handler("manage_service", name + "state_change", handler_type=BROADCAST, reliable_delivery=False)
+    def cameraStateChangeHandler(self, payload):
+        if self.unique_id == payload:
+            self.state_lock.acquire()
+            self.serviceInfo.state = ServiceReadyState
+            self.state_lock.release()
+
+    @staticmethod
+    def handleCamera(camera_id, hyperparameters, stop_signal_key, camera_data_queue_name, roi_key):
+        arg = TrackArg(cam_id=camera_id, stop_signal_key=stop_signal_key,
+                       queue_name=camera_data_queue_name, roi_key=roi_key,
+                       hyperparameters=hyperparameters)
+        call_track(arg)
+
+    @rpc
+    def stopCamera(self, stop_signal_key):
+        client = self.redis_storage.client
+        print(f"set {stop_signal_key}")
+        client.set(stop_signal_key, "1", ex=timedelta(hours=1))
 
     def handleVideo(self, video_url, hyperparameters):
         video_fps = get_video_fps(video_url)
