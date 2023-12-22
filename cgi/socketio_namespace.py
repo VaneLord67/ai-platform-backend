@@ -42,7 +42,7 @@ class DynamicNamespace(Namespace):
             self.frame_with_json_handler(queue_data)
 
     def frame_with_json_handler(self, queue_data):
-        if queue_data[:len(b'{')] == b'{' or queue_data[:len(b'{')] == b'{':
+        if queue_data[:len(b'{')] == b'{' or queue_data[:len(b'[')] == b'[':
             self.emit(event='camera_data', namespace=self.namespace, data=queue_data.decode('utf-8'))
         else:
             self.emit_jpg_text(queue_data)

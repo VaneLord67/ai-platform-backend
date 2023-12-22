@@ -102,7 +102,7 @@ class TrackService:
                 camera_data_queue_name = args['queueName']
                 roi_key = args['roiKey']
                 self.redis_storage.client.expire(name=camera_data_queue_name, time=timedelta(hours=24))
-                multiprocessing.Process(target=TrackService.handleCamera,
+                multiprocessing.Process(target=TrackService.handleCamera, daemon=True,
                                         args=[camera_id, hyperparameters, stop_signal_key,
                                               camera_data_queue_name, roi_key]).start()
             output = {

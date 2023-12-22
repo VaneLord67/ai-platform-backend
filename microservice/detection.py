@@ -22,7 +22,7 @@ from model.support_input import *
 
 
 def initStateInfo():
-    serviceInfo = ServiceInfo()
+    service_info = ServiceInfo()
 
     hp_batch_size = Hyperparameter()
     hp_batch_size.type = "integer"
@@ -40,8 +40,8 @@ def initStateInfo():
     model.name = "yoloV8"
     model.support_input = [SINGLE_PICTURE_URL_TYPE, MULTIPLE_PICTURE_URL_TYPE, VIDEO_URL_TYPE, CAMERA_TYPE]
 
-    serviceInfo.model = model
-    return serviceInfo
+    service_info.model = model
+    return service_info
 
 
 class DetectionService:
@@ -105,7 +105,7 @@ class DetectionService:
                 camera_data_queue_name = args['queueName']
                 self.redis_storage.client.expire(name=camera_data_queue_name, time=timedelta(hours=24))
                 output.unique_id = self.unique_id
-                multiprocessing.Process(target=DetectionService.handleCamera,
+                multiprocessing.Process(target=DetectionService.handleCamera, daemon=True,
                                         args=[camera_id, hyperparameters, stop_signal_key,
                                               camera_data_queue_name]).start()
             output.urls = urls

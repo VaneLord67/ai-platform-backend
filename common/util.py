@@ -32,7 +32,6 @@ class JsonBase(object):
     """
 
     def __init__(self) -> None:
-        self._json = None
         super().__setattr__("_json", {})
 
     def __setattr__(self, key: str, value: Any) -> None:

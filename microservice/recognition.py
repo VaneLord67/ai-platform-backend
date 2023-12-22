@@ -87,7 +87,7 @@ class RecognitionService:
                 stop_signal_key = args['stopSignalKey']
                 camera_data_queue_name = args['queueName']
                 self.redis_storage.client.expire(name=camera_data_queue_name, time=timedelta(hours=24))
-                multiprocessing.Process(target=RecognitionService.handleCamera,
+                multiprocessing.Process(target=RecognitionService.handleCamera, daemon=True,
                                         args=[camera_id, hyperparameters, stop_signal_key,
                                               camera_data_queue_name]).start()
             output = {
