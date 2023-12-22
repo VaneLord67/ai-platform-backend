@@ -8,8 +8,6 @@ from flask_socketio import Namespace
 from ais.opencv_track import set_roi_to_redis
 from cgi.singleton import rpc
 from common.config import config
-from microservice.detection import DetectionService
-from microservice.recognition import RecognitionService
 from microservice.track import TrackService
 from model.track_result import TrackResult
 
@@ -41,19 +39,10 @@ class DynamicNamespace(Namespace):
         client = self.redis_client
         _, queue_data = client.blpop([self.queue_name])
         if queue_data and queue_data != b'stop':
-            if self.service_name in [RecognitionService.name, TrackService.name]:
-                self.recognition_service_handler(queue_data)
-            elif self.service_name in [DetectionService.name]:
-                self.detection_service_handler(queue_data)
+            self.frame_with_json_handler(queue_data)
 
-    def recognition_service_handler(self, queue_data):
-        if queue_data[:len(b'{')] == b'{':
-            self.emit(event='camera_data', namespace=self.namespace, data=queue_data.decode('utf-8'))
-        else:
-            self.emit_jpg_text(queue_data)
-
-    def detection_service_handler(self, queue_data):
-        if queue_data[:len(b'[')] == b'[':
+    def frame_with_json_handler(self, queue_data):
+        if queue_data[:len(b'{')] == b'{' or queue_data[:len(b'{')] == b'{':
             self.emit(event='camera_data', namespace=self.namespace, data=queue_data.decode('utf-8'))
         else:
             self.emit_jpg_text(queue_data)
