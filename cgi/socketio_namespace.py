@@ -65,7 +65,6 @@ class DynamicNamespace(Namespace):
     def on_stop_camera(self, data):
         print("stop camera...")
         self.redis_client.set(self.stop_signal_key, "1", ex=timedelta(seconds=60))
-        # rpc.detection_service.stopCamera(self.stop_signal_key)
         self.redis_client.delete(self.queue_name)
         self.redis_client.expire(self.queue_name, time=timedelta(seconds=60))
         rpc.manage_service.change_state_to_ready(self.service_name, self.service_unique_id)

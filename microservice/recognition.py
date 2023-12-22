@@ -12,6 +12,8 @@ from ais.yolo_cls import YoloClsArg, call_cls_yolo
 from common.util import connect_to_database, download_file
 from microservice.object_storage import ObjectStorageService
 from microservice.redis_storage import RedisStorage
+from microservice.service_default import default_state_change_handler, default_state_report_handler, \
+    default_close_event_handler, default_close_one_event_handler
 from model.ai_model import AIModel
 from model.hyperparameter import Hyperparameter
 from model.service_info import ServiceInfo, ServiceReadyState, ServiceRunningState
@@ -35,50 +37,34 @@ class RecognitionService:
     name = "recognition_service"
 
     unique_id = str(uuid.uuid4())
-    serviceInfo = initStateInfo()
+    service_info = initStateInfo()
     state_lock = threading.Lock()
 
     redis_storage = RedisStorage()
 
-    objectStorageService = RpcProxy(ObjectStorageService.name)
+    object_storage_service = RpcProxy(ObjectStorageService.name)
 
     def __init__(self):
         self.conn = connect_to_database()
 
     @event_handler("manage_service", name + "state_report", handler_type=BROADCAST, reliable_delivery=False)
     def state_report(self, payload):
-        redis_list_key = payload
-        self.state_lock.acquire()
-        try:
-            state_string = self.serviceInfo.__str__()
-            self.redis_storage.client.rpush(redis_list_key, state_string)
-        finally:
-            self.state_lock.release()
+        default_state_report_handler(payload, self.state_lock, self.service_info, self.redis_storage.client)
 
     @event_handler("manage_service", name + "close_event", handler_type=BROADCAST, reliable_delivery=False)
     def close_event_handler(self, payload):
-        print("receive close event")
-        raise KeyboardInterrupt
+        default_close_event_handler()
 
     @event_handler("manage_service", name + "close_one_event", handler_type=BROADCAST, reliable_delivery=False)
     def close_one_event_handler(self, payload):
-        print("receive close one event")
-        close_unique_id = payload
-        redis_client = self.redis_storage.client
-        print(f"close_unique_id = {close_unique_id}")
-        lock_ok = redis_client.set(close_unique_id, "locked", ex=timedelta(minutes=1), nx=True)
-        if lock_ok:
-            print("get close lock, raise KeyboardInterrupt...")
-            raise KeyboardInterrupt
-        else:
-            print("close lock failed, continue running...")
+        default_close_one_event_handler(payload, self.redis_storage.client)
 
     @rpc
     def call(self, args: dict):
         self.state_lock.acquire()
         supportInput = SupportInput().from_dict(args['supportInput'])
         try:
-            self.serviceInfo.state = ServiceRunningState
+            self.service_info.state = ServiceRunningState
             hyperparameters = []
             if 'hyperparameters' in args:
                 hps = args['hyperparameters']
@@ -87,15 +73,15 @@ class RecognitionService:
             frames = []
             if supportInput.type == SINGLE_PICTURE_URL_TYPE:
                 img_url = supportInput.value
-                frames = self.handleSingleImage(img_url, hyperparameters)
+                frames = RecognitionService.handleSingleImage(img_url, hyperparameters)
             elif supportInput.type == MULTIPLE_PICTURE_URL_TYPE:
                 img_urls = supportInput.value
                 for img_url in img_urls:
-                    single_frames = self.handleSingleImage(img_url, hyperparameters)
+                    single_frames = RecognitionService.handleSingleImage(img_url, hyperparameters)
                     frames.extend(single_frames)
             elif supportInput.type == VIDEO_URL_TYPE:
                 video_url = supportInput.value
-                frames = self.handleVideo(video_url, hyperparameters)
+                frames = RecognitionService.handleVideo(video_url, hyperparameters)
             elif supportInput.type == CAMERA_TYPE:
                 camera_id = supportInput.value
                 stop_signal_key = args['stopSignalKey']
@@ -111,30 +97,22 @@ class RecognitionService:
             return output
         finally:
             if supportInput.type != CAMERA_TYPE:
-                self.serviceInfo.state = ServiceReadyState
+                self.service_info.state = ServiceReadyState
             self.state_lock.release()
 
     @event_handler("manage_service", name + "state_change", handler_type=BROADCAST, reliable_delivery=False)
     def cameraStateChangeHandler(self, payload):
-        if self.unique_id == payload:
-            self.state_lock.acquire()
-            self.serviceInfo.state = ServiceReadyState
-            self.state_lock.release()
+        default_state_change_handler(self.unique_id, payload, self.state_lock, self.service_info, ServiceReadyState)
 
     @staticmethod
     def handleCamera(camera_id, hyperparameters, stop_signal_key, camera_data_queue_name):
         arg = YoloClsArg(camera_id=camera_id,
-                              stop_signal_key=stop_signal_key, queue_name=camera_data_queue_name,
-                              hyperparameters=hyperparameters)
+                         stop_signal_key=stop_signal_key, queue_name=camera_data_queue_name,
+                         hyperparameters=hyperparameters)
         call_cls_yolo(arg)
 
-    @rpc
-    def stopCamera(self, stop_signal_key):
-        client = self.redis_storage.client
-        print(f"set {stop_signal_key}")
-        client.set(stop_signal_key, "1", ex=timedelta(hours=1))
-
-    def handleSingleImage(self, img_url, hyperparameters):
+    @staticmethod
+    def handleSingleImage(img_url, hyperparameters):
         img_name, img_path = download_file(img_url)
         unique_id = str(uuid.uuid4())
         output_path = f"temp/{img_name}_{unique_id}/"
@@ -155,7 +133,8 @@ class RecognitionService:
             shutil.rmtree(output_path)
             print(f"Folder '{output_path}' deleted successfully.")
 
-    def handleVideo(self, video_url, hyperparameters):
+    @staticmethod
+    def handleVideo(video_url, hyperparameters):
         video_name, video_path = download_file(video_url)
         unique_id = str(uuid.uuid4())
         output_path = f"temp/{video_name}_{unique_id}/"

@@ -195,6 +195,23 @@ def get_filename_and_ext(file_path):
     return file_name, file_extension
 
 
+def clear_video_temp_resource(video_path, output_video_path, output_path):
+    if os.path.exists(video_path):
+        try:
+            os.remove(video_path)
+            print(f'File {video_path} deleted successfully.')
+        except OSError as e:
+            print(f'Error deleting file {video_path}: {e}')
+    if os.path.exists(output_video_path):
+        try:
+            os.remove(output_video_path)
+            print(f'File {output_video_path} deleted successfully.')
+        except OSError as e:
+            print(f'Error deleting file {output_video_path}: {e}')
+    shutil.rmtree(output_path)
+    print(f"Folder '{output_path}' deleted successfully.")
+
+
 if __name__ == '__main__':
     folder_path = r"E:\GraduationDesign\ai-platform-backend\temp\track_test_tiny.mp4_7fe5e0b7-ec83-4fe8-be9c-ae7bade86498"
     generate_video(output_video_path="temp/generate_test.mp4",

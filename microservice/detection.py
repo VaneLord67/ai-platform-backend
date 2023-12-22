@@ -12,6 +12,8 @@ from ais.yolo import YoloArg, call_yolo
 from common.util import connect_to_database, download_file, find_any_file, generate_video
 from microservice.object_storage import ObjectStorageService
 from microservice.redis_storage import RedisStorage
+from microservice.service_default import default_state_change_handler, default_state_report_handler, \
+    default_close_event_handler, default_close_one_event_handler
 from model.ai_model import AIModel
 from model.detection_output import DetectionOutput
 from model.hyperparameter import Hyperparameter
@@ -46,43 +48,27 @@ class DetectionService:
     name = "detection_service"
 
     unique_id = str(uuid.uuid4())
-    serviceInfo = initStateInfo()
+    service_info = initStateInfo()
     state_lock = threading.Lock()
 
     redis_storage = RedisStorage()
 
-    objectStorageService = RpcProxy(ObjectStorageService.name)
+    object_storage_service = RpcProxy(ObjectStorageService.name)
 
     def __init__(self):
         self.conn = connect_to_database()
 
     @event_handler("manage_service", name + "state_report", handler_type=BROADCAST, reliable_delivery=False)
     def state_report(self, payload):
-        redis_list_key = payload
-        self.state_lock.acquire()
-        try:
-            state_string = self.serviceInfo.__str__()
-            self.redis_storage.client.rpush(redis_list_key, state_string)
-        finally:
-            self.state_lock.release()
+        default_state_report_handler(payload, self.state_lock, self.service_info, self.redis_storage.client)
 
     @event_handler("manage_service", name + "close_event", handler_type=BROADCAST, reliable_delivery=False)
     def close_event_handler(self, payload):
-        print("receive close event")
-        raise KeyboardInterrupt
+        default_close_event_handler()
 
     @event_handler("manage_service", name + "close_one_event", handler_type=BROADCAST, reliable_delivery=False)
     def close_one_event_handler(self, payload):
-        print("receive close one event")
-        close_unique_id = payload
-        redis_client = self.redis_storage.client
-        print(f"close_unique_id = {close_unique_id}")
-        lock_ok = redis_client.set(close_unique_id, "locked", ex=timedelta(minutes=1), nx=True)
-        if lock_ok:
-            print("get close lock, raise KeyboardInterrupt...")
-            raise KeyboardInterrupt
-        else:
-            print("close lock failed, continue running...")
+        default_close_one_event_handler(payload, self.redis_storage.client)
 
     @rpc
     def detectRPCHandler(self, args: dict):
@@ -90,7 +76,7 @@ class DetectionService:
         supportInput = SupportInput().from_dict(args['supportInput'])
 
         try:
-            self.serviceInfo.state = ServiceRunningState
+            self.service_info.state = ServiceRunningState
             hyperparameters = []
             if 'hyperparameters' in args:
                 hps = args['hyperparameters']
@@ -128,27 +114,18 @@ class DetectionService:
             return output
         finally:
             if supportInput.type != CAMERA_TYPE:
-                self.serviceInfo.state = ServiceReadyState
+                self.service_info.state = ServiceReadyState
             self.state_lock.release()
 
     @event_handler("manage_service", name + "state_change", handler_type=BROADCAST, reliable_delivery=False)
     def cameraStateChangeHandler(self, payload):
-        if self.unique_id == payload:
-            self.state_lock.acquire()
-            self.serviceInfo.state = ServiceReadyState
-            self.state_lock.release()
+        default_state_change_handler(self.unique_id, payload, self.state_lock, self.service_info, ServiceReadyState)
 
     @staticmethod
     def handleCamera(camera_id, hyperparameters, stop_signal_key, camera_data_queue_name):
         yolo_arg = YoloArg(camera_id=camera_id, stop_signal_key=stop_signal_key, queue_name=camera_data_queue_name,
                            is_show=True, save_path=None, hyperparameters=hyperparameters)
         call_yolo(yolo_arg)
-
-    @rpc
-    def stopCamera(self, stop_signal_key):
-        client = self.redis_storage.client
-        print(f"set {stop_signal_key}")
-        client.set(stop_signal_key, "1", ex=timedelta(hours=1))
 
     def handleVideo(self, video_url, hyperparameters):
         video_name, video_path = download_file(video_url)
@@ -164,7 +141,7 @@ class DetectionService:
 
             generate_video(output_video_path=output_video_path, folder_path=output_path)
 
-            urls = [self.objectStorageService.upload_object(output_video_path)]
+            urls = [self.object_storage_service.upload_object(output_video_path)]
             return urls, frames
         finally:
             if os.path.exists(video_path):
@@ -194,7 +171,7 @@ class DetectionService:
             frames = call_yolo(yolo_arg)
             output_img_path = find_any_file(output_path)
 
-            urls = [self.objectStorageService.upload_object(output_img_path)]
+            urls = [self.object_storage_service.upload_object(output_img_path)]
             return urls, frames
         finally:
             if os.path.exists(img_path):

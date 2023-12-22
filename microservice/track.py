@@ -1,7 +1,6 @@
 import base64
 import multiprocessing
 import os
-import shutil
 import threading
 import uuid
 from datetime import timedelta
@@ -11,9 +10,11 @@ from nameko.events import event_handler, BROADCAST
 from nameko.rpc import rpc, RpcProxy
 
 from ais.opencv_track import TrackArg, call_track
-from common.util import connect_to_database, download_file, generate_video, get_video_fps
+from common.util import connect_to_database, download_file, generate_video, get_video_fps, clear_video_temp_resource
 from microservice.object_storage import ObjectStorageService
 from microservice.redis_storage import RedisStorage
+from microservice.service_default import default_state_change_handler, default_close_event_handler, \
+    default_close_one_event_handler, default_state_report_handler
 from model.ai_model import AIModel
 from model.hyperparameter import Hyperparameter
 from model.service_info import ServiceInfo, ServiceReadyState, ServiceRunningState
@@ -21,7 +22,7 @@ from model.support_input import *
 
 
 def initStateInfo():
-    serviceInfo = ServiceInfo()
+    service_info = ServiceInfo()
 
     hp_roi_x = Hyperparameter()
     hp_roi_x.type = 'integer'
@@ -49,58 +50,42 @@ def initStateInfo():
     model.name = "MIL"
     model.support_input = [VIDEO_URL_TYPE, CAMERA_TYPE]
 
-    serviceInfo.model = model
-    return serviceInfo
+    service_info.model = model
+    return service_info
 
 
 class TrackService:
     name = "track_service"
 
     unique_id = str(uuid.uuid4())
-    serviceInfo = initStateInfo()
+    service_info = initStateInfo()
     state_lock = threading.Lock()
 
     redis_storage = RedisStorage()
 
-    objectStorageService = RpcProxy(ObjectStorageService.name)
+    object_storage_service = RpcProxy(ObjectStorageService.name)
 
     def __init__(self):
         self.conn = connect_to_database()
 
     @event_handler("manage_service", name + "state_report", handler_type=BROADCAST, reliable_delivery=False)
     def state_report(self, payload):
-        redis_list_key = payload
-        self.state_lock.acquire()
-        try:
-            state_string = self.serviceInfo.__str__()
-            self.redis_storage.client.rpush(redis_list_key, state_string)
-        finally:
-            self.state_lock.release()
+        default_state_report_handler(payload, self.state_lock, self.service_info, self.redis_storage.client)
 
     @event_handler("manage_service", name + "close_event", handler_type=BROADCAST, reliable_delivery=False)
     def close_event_handler(self, payload):
-        print("receive close event")
-        raise KeyboardInterrupt
+        default_close_event_handler()
 
     @event_handler("manage_service", name + "close_one_event", handler_type=BROADCAST, reliable_delivery=False)
     def close_one_event_handler(self, payload):
-        print("receive close one event")
-        close_unique_id = payload
-        redis_client = self.redis_storage.client
-        print(f"close_unique_id = {close_unique_id}")
-        lock_ok = redis_client.set(close_unique_id, "locked", ex=timedelta(minutes=1), nx=True)
-        if lock_ok:
-            print("get close lock, raise KeyboardInterrupt...")
-            raise KeyboardInterrupt
-        else:
-            print("close lock failed, continue running...")
+        default_close_one_event_handler(payload, self.redis_storage.client)
 
     @rpc
     def track(self, args: dict):
         self.state_lock.acquire()
         supportInput = SupportInput().from_dict(args['supportInput'])
         try:
-            self.serviceInfo.state = ServiceRunningState
+            self.service_info.state = ServiceRunningState
             hyperparameters = []
             if 'hyperparameters' in args:
                 hps = args['hyperparameters']
@@ -128,15 +113,12 @@ class TrackService:
             return output
         finally:
             if supportInput.type != CAMERA_TYPE:
-                self.serviceInfo.state = ServiceReadyState
+                self.service_info.state = ServiceReadyState
             self.state_lock.release()
 
     @event_handler("manage_service", name + "state_change", handler_type=BROADCAST, reliable_delivery=False)
     def cameraStateChangeHandler(self, payload):
-        if self.unique_id == payload:
-            self.state_lock.acquire()
-            self.serviceInfo.state = ServiceReadyState
-            self.state_lock.release()
+        default_state_change_handler(self.unique_id, payload, self.state_lock, self.service_info, ServiceReadyState)
 
     @staticmethod
     def handleCamera(camera_id, hyperparameters, stop_signal_key, camera_data_queue_name, roi_key):
@@ -144,12 +126,6 @@ class TrackService:
                        queue_name=camera_data_queue_name, roi_key=roi_key,
                        hyperparameters=hyperparameters)
         call_track(arg)
-
-    @rpc
-    def stopCamera(self, stop_signal_key):
-        client = self.redis_storage.client
-        print(f"set {stop_signal_key}")
-        client.set(stop_signal_key, "1", ex=timedelta(hours=1))
 
     def handleVideo(self, video_url, hyperparameters):
         video_fps = get_video_fps(video_url)
@@ -166,24 +142,11 @@ class TrackService:
 
             generate_video(output_video_path=output_video_path, folder_path=output_path, fps=video_fps)
 
-            url = self.objectStorageService.upload_object(output_video_path)
+            url = self.object_storage_service.upload_object(output_video_path)
             print("upload video:", url)
             return url, frames
         finally:
-            if os.path.exists(video_path):
-                try:
-                    os.remove(video_path)
-                    print(f'File {video_path} deleted successfully.')
-                except OSError as e:
-                    print(f'Error deleting file {video_path}: {e}')
-            if os.path.exists(output_video_path):
-                try:
-                    os.remove(output_video_path)
-                    print(f'File {output_video_path} deleted successfully.')
-                except OSError as e:
-                    print(f'Error deleting file {output_video_path}: {e}')
-            shutil.rmtree(output_path)
-            print(f"Folder '{output_path}' deleted successfully.")
+            clear_video_temp_resource(video_path, output_video_path, output_path)
 
     @rpc
     def get_first_frame(self, video_url: str):
