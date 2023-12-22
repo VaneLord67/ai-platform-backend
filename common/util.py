@@ -32,6 +32,7 @@ class JsonBase(object):
     """
 
     def __init__(self) -> None:
+        self._json = None
         super().__setattr__("_json", {})
 
     def __setattr__(self, key: str, value: Any) -> None:
@@ -225,6 +226,7 @@ def clear_image_temp_resource(img_path, output_path):
 
 
 if __name__ == '__main__':
-    folder_path = r"E:\GraduationDesign\ai-platform-backend\temp\track_test_tiny.mp4_7fe5e0b7-ec83-4fe8-be9c-ae7bade86498"
+    folder_path = r"E:\GraduationDesign\ai-platform-backend\temp\track_test_tiny.mp4_7fe5e0b7-ec83-4fe8-be9c" \
+                  r"-ae7bade86498"
     generate_video(output_video_path="temp/generate_test.mp4",
                    folder_path=folder_path, fps=30)

@@ -19,7 +19,6 @@ def call():
     if json_data['supportInput']['type'] == CAMERA_TYPE:
         unique_id = str(uuid.uuid4())
         namespace = '/' + unique_id
-        # threading.Thread(target=rpc.detection_service.detectRPCHandler, args=[json_data]).start()
         dynamicNamespace = DynamicNamespace(namespace, unique_id, service_name=DetectionService.name)
         json_data['stopSignalKey'] = dynamicNamespace.stop_signal_key
         json_data['queueName'] = dynamicNamespace.queue_name

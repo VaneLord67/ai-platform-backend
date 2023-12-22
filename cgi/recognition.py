@@ -1,7 +1,6 @@
 import uuid
 
 from flask import request, Blueprint
-from flask_socketio import SocketIO
 
 from common.api_response import APIResponse
 from microservice.recognition import RecognitionService
