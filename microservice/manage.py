@@ -20,25 +20,11 @@ class ManageService:
     @rpc
     def get_load(self):
         load = self.load_dependency.get_load()
-        return
+        return load
 
     @rpc
     def change_state_to_ready(self, service_name, service_unique_id):
         self.dispatch(f"{service_name}state_change", service_unique_id)
-
-    @rpc
-    def get_detection_services(self):
-        services = []
-        service_list_key = "detection_service_info"
-        self.redis_storage.client.delete(service_list_key)
-        service_name = "detection_service"
-        self.dispatch(f"{service_name}state_report", service_list_key)
-        time.sleep(0.5)
-        list_elements = self.redis_storage.client.lrange(service_list_key, 0, -1)
-        for service_info_str in list_elements:
-            serviceInfo = ServiceInfo().from_json(service_info_str)
-            services.append(serviceInfo)
-        return services
 
     @rpc
     def get_services(self, service_name):
