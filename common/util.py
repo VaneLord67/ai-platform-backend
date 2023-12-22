@@ -1,6 +1,7 @@
 import json
 import os
 import re
+import shutil
 from datetime import datetime, timedelta
 from typing import Any
 from urllib.parse import urlparse, unquote
@@ -208,6 +209,17 @@ def clear_video_temp_resource(video_path, output_video_path, output_path):
             print(f'File {output_video_path} deleted successfully.')
         except OSError as e:
             print(f'Error deleting file {output_video_path}: {e}')
+    shutil.rmtree(output_path)
+    print(f"Folder '{output_path}' deleted successfully.")
+
+
+def clear_image_temp_resource(img_path, output_path):
+    if os.path.exists(img_path):
+        try:
+            os.remove(img_path)
+            print(f'File {img_path} deleted successfully.')
+        except OSError as e:
+            print(f'Error deleting file {img_path}: {e}')
     shutil.rmtree(output_path)
     print(f"Folder '{output_path}' deleted successfully.")
 

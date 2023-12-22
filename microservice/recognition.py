@@ -9,7 +9,7 @@ from nameko.events import event_handler, BROADCAST
 from nameko.rpc import rpc, RpcProxy
 
 from ais.yolo_cls import YoloClsArg, call_cls_yolo
-from common.util import connect_to_database, download_file
+from common.util import connect_to_database, download_file, clear_video_temp_resource, clear_image_temp_resource
 from microservice.object_storage import ObjectStorageService
 from microservice.redis_storage import RedisStorage
 from microservice.service_default import default_state_change_handler, default_state_report_handler, \
@@ -124,14 +124,7 @@ class RecognitionService:
             clsResults = call_cls_yolo(arg)
             return clsResults
         finally:
-            if os.path.exists(img_path):
-                try:
-                    os.remove(img_path)
-                    print(f'File {img_path} deleted successfully.')
-                except OSError as e:
-                    print(f'Error deleting file {img_path}: {e}')
-            shutil.rmtree(output_path)
-            print(f"Folder '{output_path}' deleted successfully.")
+            clear_image_temp_resource(img_path, output_path)
 
     @staticmethod
     def handleVideo(video_url, hyperparameters):
@@ -148,17 +141,4 @@ class RecognitionService:
 
             return frames
         finally:
-            if os.path.exists(video_path):
-                try:
-                    os.remove(video_path)
-                    print(f'File {video_path} deleted successfully.')
-                except OSError as e:
-                    print(f'Error deleting file {video_path}: {e}')
-            if os.path.exists(output_video_path):
-                try:
-                    os.remove(output_video_path)
-                    print(f'File {output_video_path} deleted successfully.')
-                except OSError as e:
-                    print(f'Error deleting file {output_video_path}: {e}')
-            shutil.rmtree(output_path)
-            print(f"Folder '{output_path}' deleted successfully.")
+            clear_video_temp_resource(video_path, output_video_path, output_path)

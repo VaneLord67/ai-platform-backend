@@ -1,6 +1,5 @@
 import multiprocessing
 import os
-import shutil
 import threading
 import uuid
 from datetime import timedelta
@@ -9,7 +8,8 @@ from nameko.events import event_handler, BROADCAST
 from nameko.rpc import rpc, RpcProxy
 
 from ais.yolo import YoloArg, call_yolo
-from common.util import connect_to_database, download_file, find_any_file, generate_video
+from common.util import connect_to_database, download_file, find_any_file, generate_video, clear_video_temp_resource, \
+    clear_image_temp_resource
 from microservice.object_storage import ObjectStorageService
 from microservice.redis_storage import RedisStorage
 from microservice.service_default import default_state_change_handler, default_state_report_handler, \
@@ -108,7 +108,6 @@ class DetectionService:
                 multiprocessing.Process(target=DetectionService.handleCamera,
                                         args=[camera_id, hyperparameters, stop_signal_key,
                                               camera_data_queue_name]).start()
-                # self.handleCamera(camera_id, hyperparameters, stop_signal_key, camera_data_queue_name)
             output.urls = urls
             output.frames = frames
             return output
@@ -144,20 +143,7 @@ class DetectionService:
             urls = [self.object_storage_service.upload_object(output_video_path)]
             return urls, frames
         finally:
-            if os.path.exists(video_path):
-                try:
-                    os.remove(video_path)
-                    print(f'File {video_path} deleted successfully.')
-                except OSError as e:
-                    print(f'Error deleting file {video_path}: {e}')
-            if os.path.exists(output_video_path):
-                try:
-                    os.remove(output_video_path)
-                    print(f'File {output_video_path} deleted successfully.')
-                except OSError as e:
-                    print(f'Error deleting file {output_video_path}: {e}')
-            shutil.rmtree(output_path)
-            print(f"Folder '{output_path}' deleted successfully.")
+            clear_video_temp_resource(video_path, output_video_path, output_path)
 
     def handleSingleImage(self, img_url, hyperparameters):
         img_name, img_path = download_file(img_url)
@@ -174,11 +160,4 @@ class DetectionService:
             urls = [self.object_storage_service.upload_object(output_img_path)]
             return urls, frames
         finally:
-            if os.path.exists(img_path):
-                try:
-                    os.remove(img_path)
-                    print(f'File {img_path} deleted successfully.')
-                except OSError as e:
-                    print(f'Error deleting file {img_path}: {e}')
-            shutil.rmtree(output_path)
-            print(f"Folder '{output_path}' deleted successfully.")
+            clear_image_temp_resource(img_path, output_path)
