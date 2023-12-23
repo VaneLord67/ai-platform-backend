@@ -22,6 +22,7 @@ def call():
         dynamicNamespace = DynamicNamespace(namespace, unique_id, service_name=DetectionService.name)
         json_data['stopSignalKey'] = dynamicNamespace.stop_signal_key
         json_data['queueName'] = dynamicNamespace.queue_name
+        json_data['logKey'] = dynamicNamespace.log_key
         output: str = rpc.detection_service.detectRPCHandler(json_data)
         service_unique_id = json.loads(output)['unique_id']
         dynamicNamespace.service_unique_id = service_unique_id
@@ -31,7 +32,7 @@ def call():
         output_dict = rpc.detection_service.detectRPCHandler(json_data)
         output: DetectionOutput = DetectionOutput().from_json(output_dict)
         response: APIResponse
-        if len(output.urls) == 0:
+        if len(output.urls) == 0 and len(output.logs) == 0:
             response = APIResponse.fail()
         else:
             response = APIResponse.success_with_data(output)

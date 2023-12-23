@@ -9,7 +9,7 @@ from nameko.rpc import rpc, RpcProxy
 
 from ais.yolo import YoloArg, call_yolo
 from common.util import connect_to_database, download_file, find_any_file, generate_video, clear_video_temp_resource, \
-    clear_image_temp_resource
+    clear_image_temp_resource, get_log_from_redis
 from microservice.object_storage import ObjectStorageService
 from microservice.redis_storage import RedisStorage
 from microservice.service_default import default_state_change_handler, default_state_report_handler, \
@@ -85,31 +85,35 @@ class DetectionService:
             output = DetectionOutput()
             urls = []
             frames = []
+            log_strs = []
             if supportInput.type == SINGLE_PICTURE_URL_TYPE:
                 img_url = supportInput.value
-                urls, frames = self.handleSingleImage(img_url, hyperparameters)
+                urls, frames, log_strs = self.handleSingleImage(img_url, hyperparameters)
             elif supportInput.type == MULTIPLE_PICTURE_URL_TYPE:
                 img_urls = supportInput.value
                 urls = []
                 frames = []
                 for img_url in img_urls:
-                    single_urls, single_frames = self.handleSingleImage(img_url, hyperparameters)
+                    single_urls, single_frames, single_logs = self.handleSingleImage(img_url, hyperparameters)
                     urls.extend(single_urls)
                     frames.extend(single_frames)
+                    log_strs.extend(single_logs)
             elif supportInput.type == VIDEO_URL_TYPE:
                 video_url = supportInput.value
-                urls, frames = self.handleVideo(video_url, hyperparameters)
+                urls, frames, log_strs = self.handleVideo(video_url, hyperparameters)
             elif supportInput.type == CAMERA_TYPE:
                 camera_id = supportInput.value
                 stop_signal_key = args['stopSignalKey']
                 camera_data_queue_name = args['queueName']
+                log_key = args['logKey']
                 self.redis_storage.client.expire(name=camera_data_queue_name, time=timedelta(hours=24))
                 output.unique_id = self.unique_id
                 multiprocessing.Process(target=DetectionService.handleCamera, daemon=True,
                                         args=[camera_id, hyperparameters, stop_signal_key,
-                                              camera_data_queue_name]).start()
+                                              camera_data_queue_name, log_key]).start()
             output.urls = urls
             output.frames = frames
+            output.logs = log_strs
             return output
         finally:
             if supportInput.type != CAMERA_TYPE:
@@ -121,9 +125,9 @@ class DetectionService:
         default_state_change_handler(self.unique_id, payload, self.state_lock, self.service_info, ServiceReadyState)
 
     @staticmethod
-    def handleCamera(camera_id, hyperparameters, stop_signal_key, camera_data_queue_name):
+    def handleCamera(camera_id, hyperparameters, stop_signal_key, camera_data_queue_name, log_key):
         yolo_arg = YoloArg(camera_id=camera_id, stop_signal_key=stop_signal_key, queue_name=camera_data_queue_name,
-                           is_show=True, save_path=None, hyperparameters=hyperparameters)
+                           is_show=True, save_path=None, hyperparameters=hyperparameters, log_key=log_key)
         call_yolo(yolo_arg)
 
     def handleVideo(self, video_url, hyperparameters):
@@ -137,11 +141,12 @@ class DetectionService:
 
             yolo_arg = YoloArg(video_path=video_path, save_path=output_path, hyperparameters=hyperparameters)
             frames = call_yolo(yolo_arg)
+            log_strs = get_log_from_redis(self.redis_storage.client, yolo_arg.log_key)
 
             generate_video(output_video_path=output_video_path, folder_path=output_path)
 
             urls = [self.object_storage_service.upload_object(output_video_path)]
-            return urls, frames
+            return urls, frames, log_strs
         finally:
             clear_video_temp_resource(video_path, output_video_path, output_path)
 
@@ -157,7 +162,9 @@ class DetectionService:
             frames = call_yolo(yolo_arg)
             output_img_path = find_any_file(output_path)
 
+            log_strs = get_log_from_redis(self.redis_storage.client, yolo_arg.log_key)
+
             urls = [self.object_storage_service.upload_object(output_img_path)]
-            return urls, frames
+            return urls, frames, log_strs
         finally:
             clear_image_temp_resource(img_path, output_path)

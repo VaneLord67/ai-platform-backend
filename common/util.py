@@ -3,12 +3,13 @@ import os
 import re
 import shutil
 from datetime import datetime, timedelta
-from typing import Any
+from typing import Any, Union, List
 from urllib.parse import urlparse, unquote
 
 import cv2
 import jwt
 import mysql.connector
+import redis
 import requests
 from mysql.connector import Error
 
@@ -222,6 +223,13 @@ def clear_image_temp_resource(img_path, output_path):
             print(f'Error deleting file {img_path}: {e}')
     shutil.rmtree(output_path)
     print(f"Folder '{output_path}' deleted successfully.")
+
+
+def get_log_from_redis(redis_client: redis.StrictRedis, log_key: str):
+    logs: Union[List[bytes], List[str]] = redis_client.lpop(log_key, 65535)
+    if logs and len(logs) > 0:
+        return [log.decode('utf-8') for log in logs]
+    return []
 
 
 if __name__ == '__main__':

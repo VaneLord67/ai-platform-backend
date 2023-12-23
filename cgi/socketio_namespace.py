@@ -8,6 +8,7 @@ from flask_socketio import Namespace
 from ais.opencv_track import set_roi_to_redis
 from cgi.singleton import rpc
 from common.config import config
+from common.util import get_log_from_redis
 from microservice.track import TrackService
 from model.track_result import TrackResult
 
@@ -23,6 +24,7 @@ class DynamicNamespace(Namespace):
         # self.stop_signal_key: str = "stop"
         # self.queue_name: str = "my_queue"
         self.service_unique_id = service_unique_id
+        self.log_key = unique_id + "_log"
         self.redis_client: Union[redis.StrictRedis, None] = redis.StrictRedis.from_url(config.get("redis_url"))
 
         if self.service_name == TrackService.name:
@@ -37,7 +39,14 @@ class DynamicNamespace(Namespace):
 
     def on_camera_retrieve(self, data):
         client = self.redis_client
-        _, queue_data = client.blpop([self.queue_name])
+        logs = get_log_from_redis(client, self.log_key)
+        if logs and len(logs) > 0:
+            # print("logs:", logs)
+            self.emit(event='camera_log', namespace=self.namespace, data=logs)
+        result = client.blpop([self.queue_name], timeout=1)  # timeout for seconds
+        queue_data = result[1] if result else None
+        if queue_data is None:
+            self.emit(event='camera_data', namespace=self.namespace, data='')
         if queue_data and queue_data != b'stop':
             self.frame_with_json_handler(queue_data)
 
@@ -54,8 +63,12 @@ class DynamicNamespace(Namespace):
     def on_stop_camera(self, data):
         print("stop camera...")
         self.redis_client.set(self.stop_signal_key, "1", ex=timedelta(seconds=60))
-        self.redis_client.delete(self.queue_name)
-        self.redis_client.expire(self.queue_name, time=timedelta(seconds=60))
+        pipeline = self.redis_client.pipeline()
+        pipeline.delete(self.queue_name)
+        pipeline.delete(self.log_key)
+        pipeline.expire(self.queue_name, time=timedelta(seconds=60))
+        pipeline.expire(self.log_key, time=timedelta(seconds=60))
+        pipeline.execute()
         rpc.manage_service.change_state_to_ready(self.service_name, self.service_unique_id)
 
     def on_disconnect(self):

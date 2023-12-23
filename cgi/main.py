@@ -3,6 +3,7 @@ from datetime import datetime
 
 from flask import g, request
 
+from common.api_response import APIResponse
 from common.util import decode_jwt, connect_to_database
 from model.user import User
 from cgi import app
@@ -52,6 +53,11 @@ def after_request(response):
     # app.logger.info(log_data)
 
     return response
+
+
+@app.errorhandler(Exception)
+def handle_error(error):
+    return APIResponse(code=0, message=str(error)).flask_response()
 
 
 if __name__ == '__main__':

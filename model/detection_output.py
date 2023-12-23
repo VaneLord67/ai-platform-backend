@@ -9,6 +9,7 @@ class DetectionOutput(JsonBase):
         super().__init__()
         self.urls = []
         self.frames: List[List[Box]] = []
+        self.logs: List[str] = []
 
     def __json__(self):
         return self.__str__()

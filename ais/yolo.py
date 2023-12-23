@@ -1,3 +1,4 @@
+import uuid
 from typing import List, Union
 
 import redis
@@ -11,7 +12,8 @@ from model.hyperparameter import Hyperparameter
 class YoloArg:
     def __init__(self, img_path=None, video_path=None, is_show=False,
                  save_path=r'E:/GraduationDesign/tensorOutput/',
-                 size=640, batch_size=1, hyperparameters=None, camera_id=None, queue_name=None, stop_signal_key=None):
+                 size=640, batch_size=1, hyperparameters=None,
+                 camera_id=None, queue_name=None, stop_signal_key=None, log_key=None):
         self.size = size
         self.batch_size = batch_size
         self.img_path = img_path
@@ -21,6 +23,7 @@ class YoloArg:
         self.camera_id = camera_id
         self.queue_name = queue_name
         self.stop_signal_key = stop_signal_key
+        self.log_key: str = log_key if log_key else str(uuid.uuid4())
 
         if hyperparameters:
             self.wire_hyperparameters(hyperparameters)
@@ -65,6 +68,8 @@ def call_yolo(yoloArg: YoloArg):
         args.append("--show")
     if yoloArg.save_path:
         args.append(f"--savePath={yoloArg.save_path}")
+    if yoloArg.log_key:
+        args.append(f"--logKey={yoloArg.log_key}")
     print(f"args = {args}")
     cppFrames = app_yolo.main_func_wrapper(args)
     frames = []
