@@ -1,16 +1,19 @@
+import uuid
+
 from ais import app_yolo_cls
 from model.cls_result import ClsResult
 
 
 class YoloClsArg:
     def __init__(self, img_path=None, hyperparameters=None, queue_name=None, stop_signal_key=None,
-                 video_path=None, camera_id=None):
+                 video_path=None, camera_id=None, log_key=None):
         self.img_path = img_path
         self.video_path = video_path
         self.camera_id = camera_id
         self.hyperparameters = hyperparameters
         self.queue_name = queue_name
         self.stop_signal_key = stop_signal_key
+        self.log_key: str = log_key if log_key else str(uuid.uuid4())
 
         cnt = 0
         if self.img_path is not None:
@@ -36,6 +39,8 @@ def call_cls_yolo(arg: YoloClsArg):
         args.append(f"--stopSignalKey={arg.stop_signal_key}")
     if arg.queue_name:
         args.append(f"--queueName={arg.queue_name}")
+    if arg.log_key:
+        args.append(f"--logKey={arg.log_key}")
     print(f"args = {args}")
     cppClsResults = app_yolo_cls.main_func_wrapper(args)
     clsResults = []

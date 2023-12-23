@@ -9,7 +9,8 @@ from nameko.events import event_handler, BROADCAST
 from nameko.rpc import rpc, RpcProxy
 
 from ais.yolo_cls import YoloClsArg, call_cls_yolo
-from common.util import connect_to_database, download_file, clear_video_temp_resource, clear_image_temp_resource
+from common.util import connect_to_database, download_file, clear_video_temp_resource, clear_image_temp_resource, \
+    get_log_from_redis
 from microservice.object_storage import ObjectStorageService
 from microservice.redis_storage import RedisStorage
 from microservice.service_default import default_state_change_handler, default_state_report_handler, \
@@ -71,28 +72,32 @@ class RecognitionService:
                 for hp in hps:
                     hyperparameters.append(Hyperparameter().from_dict(hp))
             frames = []
+            logs = []
             if supportInput.type == SINGLE_PICTURE_URL_TYPE:
                 img_url = supportInput.value
-                frames = RecognitionService.handleSingleImage(img_url, hyperparameters)
+                frames, logs = self.handleSingleImage(img_url, hyperparameters)
             elif supportInput.type == MULTIPLE_PICTURE_URL_TYPE:
                 img_urls = supportInput.value
                 for img_url in img_urls:
-                    single_frames = RecognitionService.handleSingleImage(img_url, hyperparameters)
+                    single_frames, single_logs = self.handleSingleImage(img_url, hyperparameters)
                     frames.extend(single_frames)
+                    logs.extend(single_logs)
             elif supportInput.type == VIDEO_URL_TYPE:
                 video_url = supportInput.value
-                frames = RecognitionService.handleVideo(video_url, hyperparameters)
+                frames, logs = self.handleVideo(video_url, hyperparameters)
             elif supportInput.type == CAMERA_TYPE:
                 camera_id = supportInput.value
                 stop_signal_key = args['stopSignalKey']
                 camera_data_queue_name = args['queueName']
+                log_key = args['logKey']
                 self.redis_storage.client.expire(name=camera_data_queue_name, time=timedelta(hours=24))
                 multiprocessing.Process(target=RecognitionService.handleCamera, daemon=True,
                                         args=[camera_id, hyperparameters, stop_signal_key,
-                                              camera_data_queue_name]).start()
+                                              camera_data_queue_name, log_key]).start()
             output = {
                 "frames": frames,
-                "unique_id": self.unique_id
+                "unique_id": self.unique_id,
+                "logs": logs,
             }
             return output
         finally:
@@ -105,14 +110,13 @@ class RecognitionService:
         default_state_change_handler(self.unique_id, payload, self.state_lock, self.service_info, ServiceReadyState)
 
     @staticmethod
-    def handleCamera(camera_id, hyperparameters, stop_signal_key, camera_data_queue_name):
+    def handleCamera(camera_id, hyperparameters, stop_signal_key, camera_data_queue_name, log_key):
         arg = YoloClsArg(camera_id=camera_id,
                          stop_signal_key=stop_signal_key, queue_name=camera_data_queue_name,
-                         hyperparameters=hyperparameters)
+                         hyperparameters=hyperparameters, log_key=log_key)
         call_cls_yolo(arg)
 
-    @staticmethod
-    def handleSingleImage(img_url, hyperparameters):
+    def handleSingleImage(self, img_url, hyperparameters):
         img_name, img_path = download_file(img_url)
         unique_id = str(uuid.uuid4())
         output_path = f"temp/{img_name}_{unique_id}/"
@@ -121,13 +125,13 @@ class RecognitionService:
             print(f"Folder '{output_path}' created successfully.")
 
             arg = YoloClsArg(img_path=img_path, hyperparameters=hyperparameters)
+            logs = get_log_from_redis(self.redis_storage.client, arg.log_key)
             clsResults = call_cls_yolo(arg)
-            return clsResults
+            return clsResults, logs
         finally:
             clear_image_temp_resource(img_path, output_path)
 
-    @staticmethod
-    def handleVideo(video_url, hyperparameters):
+    def handleVideo(self, video_url, hyperparameters):
         video_name, video_path = download_file(video_url)
         unique_id = str(uuid.uuid4())
         output_path = f"temp/{video_name}_{unique_id}/"
@@ -138,7 +142,8 @@ class RecognitionService:
 
             arg = YoloClsArg(video_path=video_path, hyperparameters=hyperparameters)
             frames = call_cls_yolo(arg)
+            logs = get_log_from_redis(self.redis_storage.client, arg.log_key)
 
-            return frames
+            return frames, logs
         finally:
             clear_video_temp_resource(video_path, output_video_path, output_path)
