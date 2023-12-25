@@ -1,3 +1,4 @@
+import uuid
 from datetime import timedelta
 from typing import Union, List
 
@@ -12,7 +13,7 @@ from model.track_result import TrackResult
 class TrackArg:
     def __init__(self, video_path=None, save_path=None, roi_rec=None,
                  hyperparameters=None, is_show=False,
-                 cam_id=None, stop_signal_key=None, queue_name=None, roi_key=None):
+                 cam_id=None, stop_signal_key=None, queue_name=None, roi_key=None, log_key=None):
         self.video_path: Union[str, None] = video_path
         self.is_show = is_show
         self.save_path: Union[str, None] = save_path
@@ -23,6 +24,7 @@ class TrackArg:
         self.stop_signal_key = stop_signal_key
         self.queue_name = queue_name
         self.roi_key = roi_key
+        self.log_key: str = log_key if log_key else str(uuid.uuid4())
 
         cnt = 0
         if self.video_path:
@@ -81,6 +83,8 @@ def call_track(arg: TrackArg):
         args.append(f"--queueName={arg.queue_name}")
     if arg.roi_key:
         args.append(f"--roiKey={arg.roi_key}")
+    if arg.log_key:
+        args.append(f"--logKey={arg.log_key}")
     print(f"args = {args}")
     cppResults = track_opencv.main_func_wrapper(args)
     trackResults = []

@@ -22,6 +22,7 @@ def call():
         json_data['stopSignalKey'] = dynamicNamespace.stop_signal_key
         json_data['queueName'] = dynamicNamespace.queue_name
         json_data['roiKey'] = dynamicNamespace.roi_key
+        json_data['logKey'] = dynamicNamespace.log_key
         output_dict: dict = rpc.track_service.track(json_data)
         service_unique_id = output_dict['unique_id']
         dynamicNamespace.service_unique_id = service_unique_id
@@ -31,12 +32,14 @@ def call():
         output_dict: dict = rpc.track_service.track(json_data)
         url = output_dict['url']
         frame_strs = output_dict['frames']
+        logs = output_dict['logs']
         frames = []
         for frame_str in frame_strs:
             frames.append(TrackResult().from_json(frame_str))
         data = {
             'frames': frames,
             'url': url,
+            'logs': logs,
         }
         response: APIResponse
         if len(url) == 0:

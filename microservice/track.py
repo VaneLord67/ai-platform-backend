@@ -10,7 +10,8 @@ from nameko.events import event_handler, BROADCAST
 from nameko.rpc import rpc, RpcProxy
 
 from ais.opencv_track import TrackArg, call_track
-from common.util import connect_to_database, download_file, generate_video, get_video_fps, clear_video_temp_resource
+from common.util import connect_to_database, download_file, generate_video, get_video_fps, clear_video_temp_resource, \
+    get_log_from_redis
 from microservice.object_storage import ObjectStorageService
 from microservice.redis_storage import RedisStorage
 from microservice.service_default import default_state_change_handler, default_close_event_handler, \
@@ -93,22 +94,25 @@ class TrackService:
                     hyperparameters.append(Hyperparameter().from_dict(hp))
             frames = []
             url = ""
+            logs = []
             if supportInput.type == VIDEO_URL_TYPE:
                 video_url = supportInput.value
-                url, frames = self.handleVideo(video_url, hyperparameters)
+                url, frames, logs = self.handleVideo(video_url, hyperparameters)
             elif supportInput.type == CAMERA_TYPE:
                 camera_id = supportInput.value
                 stop_signal_key = args['stopSignalKey']
                 camera_data_queue_name = args['queueName']
                 roi_key = args['roiKey']
+                log_key = args['logKey']
                 self.redis_storage.client.expire(name=camera_data_queue_name, time=timedelta(hours=24))
                 multiprocessing.Process(target=TrackService.handleCamera, daemon=True,
                                         args=[camera_id, hyperparameters, stop_signal_key,
-                                              camera_data_queue_name, roi_key]).start()
+                                              camera_data_queue_name, roi_key, log_key]).start()
             output = {
                 "url": url,
                 "frames": frames,
-                "unique_id": self.unique_id
+                "unique_id": self.unique_id,
+                "logs": logs,
             }
             return output
         finally:
@@ -121,10 +125,10 @@ class TrackService:
         default_state_change_handler(self.unique_id, payload, self.state_lock, self.service_info, ServiceReadyState)
 
     @staticmethod
-    def handleCamera(camera_id, hyperparameters, stop_signal_key, camera_data_queue_name, roi_key):
+    def handleCamera(camera_id, hyperparameters, stop_signal_key, camera_data_queue_name, roi_key, log_key):
         arg = TrackArg(cam_id=camera_id, stop_signal_key=stop_signal_key,
                        queue_name=camera_data_queue_name, roi_key=roi_key,
-                       hyperparameters=hyperparameters)
+                       hyperparameters=hyperparameters, log_key=log_key)
         call_track(arg)
 
     def handleVideo(self, video_url, hyperparameters):
@@ -142,9 +146,11 @@ class TrackService:
 
             generate_video(output_video_path=output_video_path, folder_path=output_path, fps=video_fps)
 
+            logs = get_log_from_redis(self.redis_storage.client, arg.log_key)
+
             url = self.object_storage_service.upload_object(output_video_path)
             print("upload video:", url)
-            return url, frames
+            return url, frames, logs
         finally:
             clear_video_temp_resource(video_path, output_video_path, output_path)
 
