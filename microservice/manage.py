@@ -6,6 +6,7 @@ from nameko.events import EventDispatcher
 from nameko.rpc import rpc
 
 from microservice.load_dependency import LoadDependency
+from microservice.mysql_storage import MysqlStorage
 from microservice.redis_storage import RedisStorage
 from model.service_info import ServiceInfo
 
@@ -15,6 +16,7 @@ class ManageService:
 
     dispatch = EventDispatcher()
     redis_storage = RedisStorage()
+    mysql_storage = MysqlStorage()
     load_dependency = LoadDependency()
 
     @rpc

@@ -1,10 +1,10 @@
 import json
-from datetime import datetime
 
 from nameko.rpc import rpc
 
 from microservice.mysql_storage import MysqlStorage
 from model.request_log import RequestLog
+from model.statistics import Statistics
 
 
 class MonitorService:
@@ -40,23 +40,8 @@ class MonitorService:
         result = cursor.fetchall()
         requestLogs = []
         for r in result:
-            id = r[0]
-            user_id = r[1]
-            method = r[2]
-            path = r[3]
-            status_code = r[4]
-            duration = r[5]
-            response_json = r[6]
-            time: datetime = r[7]
-            rl = RequestLog()
-            rl.id = id
-            rl.user_id = user_id
-            rl.method = method
-            rl.path = path
-            rl.status_code = status_code
-            rl.duration = duration
-            rl.response_json = response_json
-            rl.time = time.timestamp()
+            id, user_id, method, path, status_code, duration, response_json, time = r
+            rl = RequestLog(id, user_id, method, path, status_code, duration, response_json, time.timestamp())
             requestLogs.append(rl)
         # 关闭连接
         cursor.close()
@@ -82,6 +67,50 @@ class MonitorService:
         conn.commit()
         cursor.close()
 
+    @staticmethod
+    def build_statistics_sql(time_interval_string: str):
+        return f"""
+                            SELECT 
+                                path,
+                                COUNT(*) AS total_calls,
+                                AVG(duration) AS avg_response_time,
+                                (SUM(CASE WHEN status_code >= 400 THEN 1 ELSE 0 END) / COUNT(*)) * 100 AS error_rate
+                            FROM 
+                                request_log
+                            WHERE 
+                                path IN ('/model/detection/call', '/model/recognition/call', '/model/track/call')
+                                AND time >= NOW() + INTERVAL 8 HOUR - INTERVAL {time_interval_string} 
+                            GROUP BY 
+                                path
+                            ORDER BY 
+                                path;
+                            """
+
     @rpc
-    def hello(self):
-        return "hello!"
+    def get_statistics(self):
+        cursor = self.mysql_storage.conn.cursor()
+        sql_for_hour = self.build_statistics_sql("1 HOUR")
+        cursor.execute(sql_for_hour)
+        results = cursor.fetchall()
+        statistics_for_hour = []
+        for row in results:
+            path, total_calls, avg_response_time, error_rate = row
+            statistic = Statistics(path, total_calls, float(avg_response_time), float(error_rate))
+            statistics_for_hour.append(statistic)
+
+        cursor = self.mysql_storage.conn.cursor()
+        sql_for_day = self.build_statistics_sql("1 DAY")
+        cursor.execute(sql_for_day)
+        statistics_for_day = []
+        results = cursor.fetchall()
+        for row in results:
+            path, total_calls, avg_response_time, error_rate = row
+            statistic = Statistics(path, total_calls, float(avg_response_time), float(error_rate))
+            statistics_for_day.append(statistic)
+
+        r = {
+            'statistics_for_hour': statistics_for_hour,
+            'statistics_for_day': statistics_for_day,
+        }
+        return r
+

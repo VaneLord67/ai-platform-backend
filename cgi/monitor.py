@@ -2,6 +2,7 @@ from flask import request, Blueprint
 
 from common.api_response import APIResponse
 from model.request_log import RequestLog
+from model.statistics import Statistics
 from .singleton import rpc
 
 monitor_bp = Blueprint('monitor', __name__, url_prefix='/monitor')
@@ -29,3 +30,22 @@ def get_monitor_data_page():
 def get_load():
     load = rpc.manage_service.get_load()
     return APIResponse.success_with_data(load).flask_response()
+
+
+@monitor_bp.route('/statistics', methods=['GET'])
+def get_statistics():
+    statistics = rpc.monitor_service.get_statistics()
+
+    statistics_for_hour = []
+    statistics_for_day = []
+    for statistic_json_str in statistics['statistics_for_hour']:
+        statistic = Statistics().from_json(statistic_json_str)
+        statistics_for_hour.append(statistic)
+    for statistic_json_str in statistics['statistics_for_day']:
+        statistic = Statistics().from_json(statistic_json_str)
+        statistics_for_day.append(statistic)
+    r = {
+        'statistics_for_day': statistics_for_day,
+        'statistics_for_hour': statistics_for_hour
+    }
+    return APIResponse.success_with_data(r).flask_response()

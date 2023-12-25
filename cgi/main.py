@@ -48,7 +48,7 @@ def after_request(response):
         'response_json': response.get_json(),
         'time': datetime.now(),
     }
-    if request.method != 'OPTIONS' and request.path != '/monitor/page':
+    if request.method != 'OPTIONS' and request.path not in ['/monitor/page', '/monitor/statistics]']:
         rpc.monitor_service.insertRequestLog.call_async(log_data)
     # app.logger.info(log_data)
 
@@ -57,6 +57,7 @@ def after_request(response):
 
 @app.errorhandler(Exception)
 def handle_error(error):
+    print(error)
     return APIResponse(code=0, message=str(error)).flask_response()
 
 
