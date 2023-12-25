@@ -7,14 +7,16 @@
 # 依赖
 ```text
 flask
-flask-cors 
+flask-cors
 flask_nameko
 Flask-SocketIO
-nameko 
-opencv 
-minio 
-psutil 
-GPutil 
+DBUtils
+mysqlclient
+nameko
+opencv
+minio
+psutil
+GPutil
 redis
 ```
 

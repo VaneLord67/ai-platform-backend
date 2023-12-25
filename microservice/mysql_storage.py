@@ -1,25 +1,35 @@
 from typing import Union
 
-from mysql.connector import MySQLConnection, CMySQLConnection
-from mysql.connector.pooling import PooledMySQLConnection
+from dbutils.pooled_db import PooledDB, PooledSharedDBConnection, PooledDedicatedDBConnection
+from eventlet.green import MySQLdb
 from nameko.extensions import DependencyProvider
 
-from common.util import connect_to_database
+from common.config import config
 
 
 class MysqlStorageWrapper:
 
-    def __init__(self, conn):
-        self.conn = conn
+    def __init__(self, conn: Union[None, PooledSharedDBConnection, PooledDedicatedDBConnection]):
+        self.conn: Union[None, PooledSharedDBConnection, PooledDedicatedDBConnection] = conn
 
 
 class MysqlStorage(DependencyProvider):
 
     def __init__(self):
-        self.conn: Union[PooledMySQLConnection, MySQLConnection, CMySQLConnection, None] = None
+        self.pool: Union[None, PooledDB] = None
+        self.conn: Union[None, PooledSharedDBConnection, PooledDedicatedDBConnection] = None
 
     def setup(self):
-        self.conn = connect_to_database()
+        pool = PooledDB(MySQLdb,
+                        host=config.get("mysql_host"),
+                        port=int(config.get("mysql_port")),
+                        user=config.get("mysql_user"),
+                        passwd=config.get("mysql_password"),
+                        db=config.get("mysql_database"),
+                        )
+        self.pool = pool
 
     def get_dependency(self, worker_ctx):
-        return MysqlStorageWrapper(self.conn)
+        conn = self.pool.connection()
+        conn.cursor()
+        return MysqlStorageWrapper(self.pool.connection())
