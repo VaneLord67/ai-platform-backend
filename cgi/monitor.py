@@ -3,12 +3,14 @@ from flask import request, Blueprint
 from common.api_response import APIResponse
 from model.request_log import RequestLog
 from model.statistics import Statistics
-from .singleton import rpc
+from .singleton import rpc, register_route
 
-monitor_bp = Blueprint('monitor', __name__, url_prefix='/monitor')
+url_prefix = "/monitor"
+monitor_bp = Blueprint('monitor', __name__, url_prefix=url_prefix)
 
 
 @monitor_bp.route('/page', methods=['GET'])
+@register_route(url_prefix + "/page", "获取请求日志", "GET")
 def get_monitor_data_page():
     page_size = request.args.get('pageSize', default=5, type=int)
     page_num = request.args.get('pageNum', default=1, type=int)
@@ -27,12 +29,14 @@ def get_monitor_data_page():
 
 
 @monitor_bp.route('/load', methods=['GET'])
+@register_route(url_prefix + "/load", "获取硬件负载", "GET")
 def get_load():
     load = rpc.manage_service.get_load()
     return APIResponse.success_with_data(load).flask_response()
 
 
 @monitor_bp.route('/statistics', methods=['GET'])
+@register_route(url_prefix + "/statistics", "获取流量统计信息", "GET")
 def get_statistics():
     statistics = rpc.monitor_service.get_statistics()
 

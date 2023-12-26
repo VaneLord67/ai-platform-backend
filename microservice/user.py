@@ -24,7 +24,7 @@ class UserService:
             # 插入新用户
             try:
                 cursor = conn.cursor()
-                insert_query = "INSERT INTO users (username, password) VALUES (%s, %s)"
+                insert_query = "INSERT INTO users (username, password, role) VALUES (%s, %s, guest)"
                 cursor.execute(insert_query, (username, password))
                 conn.commit()
                 if cursor.rowcount > 0:

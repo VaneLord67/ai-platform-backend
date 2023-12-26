@@ -6,13 +6,15 @@ from common.api_response import APIResponse
 from microservice.track import TrackService
 from model.support_input import CAMERA_TYPE
 from model.track_result import TrackResult
-from .singleton import rpc, socketio
+from .singleton import rpc, socketio, register_route
 from .socketio_namespace import DynamicNamespace
 
-track_bp = Blueprint('track', __name__, url_prefix='/model/track')
+url_prefix = '/model/track'
+track_bp = Blueprint('track', __name__, url_prefix=url_prefix)
 
 
 @track_bp.route('/call', methods=['POST'])
+@register_route(url_prefix + "/call", "调用跟踪服务", "POST")
 def call():
     json_data = request.get_json()
     if json_data['supportInput']['type'] == CAMERA_TYPE:
@@ -50,6 +52,7 @@ def call():
 
 
 @track_bp.route('/first_frame', methods=['GET'])
+@register_route(url_prefix + "/first_frame", "获取视频第一帧", "GET")
 def get_first_frame():
     url = request.args.get('url')
     jpg_base64_text = rpc.track_service.get_first_frame(url)

@@ -7,13 +7,15 @@ from common.api_response import APIResponse
 from microservice.detection import DetectionService
 from model.detection_output import DetectionOutput
 from model.support_input import CAMERA_TYPE
-from .singleton import rpc, socketio
+from .singleton import rpc, socketio, register_route
 from .socketio_namespace import DynamicNamespace
 
-detection_bp = Blueprint('detection', __name__, url_prefix='/model/detection')
+url_prefix = "/model/detection"
+detection_bp = Blueprint('detection', __name__, url_prefix=url_prefix)
 
 
 @detection_bp.route('/call', methods=['POST'])
+@register_route(url_prefix + "/call", "检测服务调用", "POST")
 def call():
     json_data = request.get_json()
     if json_data['supportInput']['type'] == CAMERA_TYPE:

@@ -24,6 +24,8 @@ def register():
     json_data = request.get_json()
     user = User().from_dict(json_data)
     jwt = rpc.user_service.register(user)
+    enforcer.add_role_for_user(str(user.id), 'guest')
+    enforcer.save_policy()
     response = APIResponse.success_with_data(jwt) if jwt != "" else APIResponse.fail()
     return response.to_dict()
 

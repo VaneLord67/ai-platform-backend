@@ -6,13 +6,15 @@ from common.api_response import APIResponse
 from microservice.recognition import RecognitionService
 from model.cls_result import ClsResult
 from model.support_input import CAMERA_TYPE
-from .singleton import rpc, socketio
+from .singleton import rpc, socketio, register_route
 from .socketio_namespace import DynamicNamespace
 
-recognition_bp = Blueprint('recognition', __name__, url_prefix='/model/recognition')
+url_prefix = "/model/recognition"
+recognition_bp = Blueprint('recognition', __name__, url_prefix=url_prefix)
 
 
 @recognition_bp.route('/call', methods=['POST'])
+@register_route(url_prefix + "/call", "调用分类服务", "POST")
 def call():
     json_data = request.get_json()
     if json_data['supportInput']['type'] == CAMERA_TYPE:
