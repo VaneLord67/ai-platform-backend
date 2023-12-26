@@ -1,5 +1,6 @@
 .idea
 temp
 *.dll
+policy.csv
 ais/*.pyd
 ais/*.dll

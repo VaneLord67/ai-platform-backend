@@ -13,7 +13,7 @@ class MonitorService:
     mysql_storage = MysqlStorage()
 
     @rpc
-    def getTotalNum(self):
+    def get_total_num(self):
         conn = self.mysql_storage.conn
         count_query = "SELECT COUNT(*) FROM request_log"
         cursor = conn.cursor()
@@ -23,7 +23,7 @@ class MonitorService:
         return total_num
 
     @rpc
-    def getMonitorDataList(self, page_num, page_size):
+    def get_monitor_data_list(self, page_num, page_size):
         conn = self.mysql_storage.conn
         cursor = conn.cursor()
         # 构建查询语句
@@ -48,7 +48,7 @@ class MonitorService:
         return requestLogs
 
     @rpc
-    def insertRequestLog(self, log_data):
+    def insert_request_log(self, log_data):
         conn = self.mysql_storage.conn
         cursor = conn.cursor()
         insert_sql = """

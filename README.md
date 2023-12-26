@@ -6,12 +6,14 @@
 
 # 依赖
 ```text
+# 使用pip install安装以下库
 flask
 flask-cors
 flask_nameko
 Flask-SocketIO
 DBUtils
 mysqlclient
+casbin
 nameko
 opencv
 minio
