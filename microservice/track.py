@@ -9,7 +9,7 @@ import cv2
 from nameko.events import event_handler, BROADCAST
 from nameko.rpc import rpc, RpcProxy
 
-from ais.opencv_track import TrackArg, call_track
+from ais.yolo import YoloArg, call_yolo
 from common.util import connect_to_database, download_file, generate_video, get_video_fps, clear_video_temp_resource, \
     get_log_from_redis
 from microservice.object_storage import ObjectStorageService
@@ -25,30 +25,20 @@ from model.support_input import *
 def initStateInfo():
     service_info = ServiceInfo()
 
-    hp_roi_x = Hyperparameter()
-    hp_roi_x.type = 'integer'
-    hp_roi_x.name = 'roi_x'
-    hp_roi_x.default = 0
+    hp_batch_size = Hyperparameter()
+    hp_batch_size.type = "integer"
+    hp_batch_size.name = "batch_size"
+    hp_batch_size.default = 1
 
-    hp_roi_y = Hyperparameter()
-    hp_roi_y.type = 'integer'
-    hp_roi_y.name = 'roi_y'
-    hp_roi_y.default = 0
-
-    hp_roi_width = Hyperparameter()
-    hp_roi_width.type = 'integer'
-    hp_roi_width.name = 'roi_width'
-    hp_roi_width.default = 0
-
-    hp_roi_height = Hyperparameter()
-    hp_roi_height.type = 'integer'
-    hp_roi_height.name = 'roi_height'
-    hp_roi_height.default = 0
+    hp_size = Hyperparameter()
+    hp_size.type = "integer"
+    hp_size.name = "size"
+    hp_size.default = 640
 
     model = AIModel()
     model.field = "跟踪"
-    model.hyperparameters = [hp_roi_x, hp_roi_y, hp_roi_width, hp_roi_height]
-    model.name = "MIL"
+    model.hyperparameters = [hp_batch_size, hp_size]
+    model.name = "yoloV8"
     model.support_input = [VIDEO_URL_TYPE, CAMERA_TYPE]
 
     service_info.model = model
@@ -107,7 +97,7 @@ class TrackService:
                 self.redis_storage.client.expire(name=camera_data_queue_name, time=timedelta(hours=24))
                 multiprocessing.Process(target=TrackService.handleCamera, daemon=True,
                                         args=[camera_id, hyperparameters, stop_signal_key,
-                                              camera_data_queue_name, roi_key, log_key]).start()
+                                              camera_data_queue_name, log_key]).start()
             output = {
                 "url": url,
                 "frames": frames,
@@ -125,11 +115,11 @@ class TrackService:
         default_state_change_handler(self.unique_id, payload, self.state_lock, self.service_info, ServiceReadyState)
 
     @staticmethod
-    def handleCamera(camera_id, hyperparameters, stop_signal_key, camera_data_queue_name, roi_key, log_key):
-        arg = TrackArg(cam_id=camera_id, stop_signal_key=stop_signal_key,
-                       queue_name=camera_data_queue_name, roi_key=roi_key,
+    def handleCamera(camera_id, hyperparameters, stop_signal_key, camera_data_queue_name, log_key):
+        arg = YoloArg(camera_id=camera_id, stop_signal_key=stop_signal_key,
+                       queue_name=camera_data_queue_name, is_track=True, is_show=True,
                        hyperparameters=hyperparameters, log_key=log_key)
-        call_track(arg)
+        call_yolo(arg)
 
     def handleVideo(self, video_url, hyperparameters):
         video_fps = get_video_fps(video_url)
@@ -141,8 +131,9 @@ class TrackService:
             os.makedirs(output_path, exist_ok=True)
             print(f"Folder '{output_path}' created successfully.")
 
-            arg = TrackArg(video_path=video_path, save_path=output_path, hyperparameters=hyperparameters)
-            frames = call_track(arg)
+            arg = YoloArg(video_path=video_path, save_path=output_path,
+                          hyperparameters=hyperparameters, is_track=True, is_show=True)
+            frames = call_yolo(arg)
 
             generate_video(output_video_path=output_video_path, folder_path=output_path, fps=video_fps)
 

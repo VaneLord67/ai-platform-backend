@@ -15,7 +15,7 @@ class_names = ["person", "bicycle", "car", "motorcycle", "airplane", "bus", "tra
 
 
 class Box(JsonBase):
-    def __init__(self, left, right, bottom, top, confidence, label):
+    def __init__(self, left=None, right=None, bottom=None, top=None, confidence=None, label=None, track_id=None):
         super().__init__()
         self.left: float = left
         self.right: float = right
@@ -23,7 +23,8 @@ class Box(JsonBase):
         self.top: float = top
         self.confidence: float = confidence
         self.label: int = label
-        self.class_name: str = class_names[label]
+        self.class_name: str = class_names[label] if label else ""
+        self.track_id: int = track_id
 
     def __json__(self):
         return self.to_json()

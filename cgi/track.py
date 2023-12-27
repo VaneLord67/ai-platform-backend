@@ -4,6 +4,7 @@ from flask import request, Blueprint
 
 from common.api_response import APIResponse
 from microservice.track import TrackService
+from model.box import Box
 from model.support_input import CAMERA_TYPE
 from model.track_result import TrackResult
 from .singleton import rpc, socketio, register_route
@@ -37,7 +38,11 @@ def call():
         logs = output_dict['logs']
         frames = []
         for frame_str in frame_strs:
-            frames.append(TrackResult().from_json(frame_str))
+            boxes = []
+            for box_dict in frame_str:
+                if box_dict['track_id'] > 0:
+                    boxes.append(Box().from_dict(box_dict))
+            frames.append(boxes)
         data = {
             'frames': frames,
             'url': url,

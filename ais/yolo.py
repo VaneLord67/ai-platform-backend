@@ -13,7 +13,7 @@ class YoloArg:
     def __init__(self, img_path=None, video_path=None, is_show=False,
                  save_path=r'E:/GraduationDesign/tensorOutput/',
                  size=640, batch_size=1, hyperparameters=None,
-                 camera_id=None, queue_name=None, stop_signal_key=None, log_key=None):
+                 camera_id=None, queue_name=None, stop_signal_key=None, log_key=None, is_track=False):
         self.size = size
         self.batch_size = batch_size
         self.img_path = img_path
@@ -24,6 +24,7 @@ class YoloArg:
         self.queue_name = queue_name
         self.stop_signal_key = stop_signal_key
         self.log_key: str = log_key if log_key else str(uuid.uuid4())
+        self.is_track: bool = is_track
 
         if hyperparameters:
             self.wire_hyperparameters(hyperparameters)
@@ -70,13 +71,16 @@ def call_yolo(yoloArg: YoloArg):
         args.append(f"--savePath={yoloArg.save_path}")
     if yoloArg.log_key:
         args.append(f"--logKey={yoloArg.log_key}")
+    if yoloArg.is_track:
+        args.append(f"--track")
     print(f"args = {args}")
     cppFrames = app_yolo.main_func_wrapper(args)
     frames = []
     for cppFrame in cppFrames:
         boxes = []
         for cppBox in cppFrame:
-            box = Box(cppBox.left, cppBox.right, cppBox.bottom, cppBox.top, cppBox.confidence, cppBox.label)
+            box = Box(cppBox.left, cppBox.right, cppBox.bottom, cppBox.top, cppBox.confidence,
+                      cppBox.label, cppBox.track_id)
             boxes.append(box)
         frames.append(boxes)
     return frames
@@ -93,18 +97,34 @@ if __name__ == '__main__':
     # frames = call_yolo(yoloArg)
     # print(frames)
 
+    # track test
+    yoloArg = YoloArg(video_path=r"E:\GraduationDesign\TensorRT-YOLOv8-ByteTrack\videos\demo.mp4",
+                      is_track=True, is_show=True)
+    # yoloArg = YoloArg(img_path=r"E:/GraduationDesign/tensorrt-alpha/data/zidane.jpg", is_track=True, is_show=True)
+    frames = call_yolo(yoloArg)
+    frame_idx = 0
+    for frame in frames:
+        # print(f'frame:{frame_idx}')
+        # print(f'std::vector<byte_track::Object> frame{frame_idx};')
+        for box in frame:
+            pass
+            # print(box)
+            # print(f'add_element(frame{frame_idx}, {box.left}, {box.right}, {box.bottom}, {box.top}, {box.confidence}, {box.label});')
+        frame_idx += 1
+
+    #
     # yoloArg = YoloArg(video_path=r"E:/GraduationDesign/tensorrt-alpha/data/people.mp4", is_show=True)
     # frames = call_yolo(yoloArg)
     # print(frames)
 
-    queue_name = "my_queue"
-    stopSignalKey = "stop"
-    client: Union[redis.StrictRedis, None] = redis.StrictRedis.from_url(config.get("redis_url"))
-    client.delete(queue_name)
-    client.delete(stopSignalKey)
-    yoloArg = YoloArg(camera_id=0, batch_size=8, is_show=True,
-                      save_path=None, queue_name=queue_name, stop_signal_key=stopSignalKey)
-    frames = call_yolo(yoloArg)
+    # queue_name = "my_queue"
+    # stopSignalKey = "stop"
+    # client: Union[redis.StrictRedis, None] = redis.StrictRedis.from_url(config.get("redis_url"))
+    # client.delete(queue_name)
+    # client.delete(stopSignalKey)
+    # yoloArg = YoloArg(camera_id=0, batch_size=8, is_show=True,
+    #                   save_path=None, queue_name=queue_name, stop_signal_key=stopSignalKey)
+    # frames = call_yolo(yoloArg)
 
     # yolo_thread = threading.Thread(target=call_yolo, args=[yoloArg])
     # yolo_thread.start()
