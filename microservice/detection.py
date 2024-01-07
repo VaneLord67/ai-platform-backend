@@ -1,27 +1,20 @@
-from typing import Union
-
-import eventlet
-import redis
-from nameko.standalone.rpc import ClusterRpcProxy
-
-from common import config
-
-eventlet.monkey_patch()
-
 import multiprocessing
 import os
 import threading
 import time
 import uuid
 from datetime import timedelta
-from multiprocessing import Queue
+from typing import Union
 
+import redis
 from nameko.events import event_handler, BROADCAST
 from nameko.rpc import rpc, RpcProxy
+from nameko.standalone.rpc import ClusterRpcProxy
 
 from ais.yolo import YoloArg, call_yolo
-from common.util import connect_to_database, download_file, find_any_file, generate_video, clear_video_temp_resource, \
-    clear_image_temp_resource, get_log_from_redis, clear_video_temp_resource2
+from common import config
+from common.util import connect_to_database, download_file, find_any_file, clear_image_temp_resource, \
+    get_log_from_redis, clear_video_temp_resource
 from microservice.object_storage import ObjectStorageService
 from microservice.redis_storage import RedisStorage
 from microservice.service_default import default_state_change_handler, default_state_report_handler, \
@@ -119,14 +112,14 @@ class DetectionService:
                 video_progress_key = args['videoProgressKey']
 
                 video_name, video_path = download_file(video_url)
-                unique_id = str(uuid.uuid4()) if 'taskId' not in args else args['taskId']
+                task_id = str(uuid.uuid4()) if 'taskId' not in args else args['taskId']
                 output_video_path = f"temp/output_{video_name}"
-                output_jsonl_path = f"temp/output_{unique_id}.jsonl"
+                output_jsonl_path = f"temp/output_{task_id}.jsonl"
 
-                multiprocessing.Process(target=DetectionService.videoWorker, daemon=True,
+                multiprocessing.Process(target=DetectionService.handleVideo, daemon=True,
                                         args=[video_path, output_video_path, output_jsonl_path, video_progress_key,
-                                              hyperparameters, unique_id, self.unique_id]).start()
-                output.task_id = unique_id
+                                              hyperparameters, task_id, self.unique_id]).start()
+                output.task_id = task_id
                 output.unique_id = self.unique_id
 
             elif supportInput.type == CAMERA_TYPE:
@@ -159,7 +152,7 @@ class DetectionService:
         call_yolo(yolo_arg)
 
     @staticmethod
-    def videoWorker(video_path, video_output_path, video_output_json_path, video_progress_key,
+    def handleVideo(video_path, video_output_path, video_output_json_path, video_progress_key,
                     hyperparameters, task_id, service_unique_id):
         try:
             yolo_arg = YoloArg(video_path=video_path,
@@ -182,27 +175,7 @@ class DetectionService:
                 cluster_rpc.manage_service.change_state_to_ready(DetectionService.name, service_unique_id)
                 print(f"video task done, task_id:{task_id}")
         finally:
-            clear_video_temp_resource2(video_path, video_output_path, video_output_json_path)
-
-    def handleVideo(self, video_url, hyperparameters):
-        video_name, video_path = download_file(video_url)
-        unique_id = str(uuid.uuid4())
-        output_path = f"temp/{video_name}_{unique_id}/"
-        output_video_path = f"temp/output_{video_name}"
-        try:
-            os.makedirs(output_path, exist_ok=True)
-            print(f"Folder '{output_path}' created successfully.")
-
-            yolo_arg = YoloArg(video_path=video_path, save_path=output_path, hyperparameters=hyperparameters)
-            frames = call_yolo(yolo_arg)
-            log_strs = get_log_from_redis(self.redis_storage.client, yolo_arg.log_key)
-
-            generate_video(output_video_path=output_video_path, folder_path=output_path)
-
-            urls = [self.object_storage_service.upload_object(output_video_path)]
-            return urls, frames, log_strs
-        finally:
-            clear_video_temp_resource(video_path, output_video_path, output_path)
+            clear_video_temp_resource(video_path, video_output_path, video_output_json_path)
 
     def handleSingleImage(self, img_url, hyperparameters):
         img_name, img_path = download_file(img_url)

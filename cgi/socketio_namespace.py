@@ -33,6 +33,19 @@ class DynamicNamespace(Namespace):
         if self.service_name == TrackService.name:
             self.roi_key = unique_id + "_roi"
 
+    def set_json_data(self, json_data):
+        if self.source == CAMERA_TYPE:
+            json_data['stopSignalKey'] = self.stop_signal_key
+            json_data['queueName'] = self.queue_name
+            json_data['logKey'] = self.log_key
+        elif self.source == VIDEO_URL_TYPE:
+            json_data['stopSignalKey'] = self.stop_signal_key
+            json_data['logKey'] = self.log_key
+            json_data['videoProgressKey'] = self.video_progress_key
+            json_data['taskId'] = self.unique_id
+        return json_data
+
+
     def on_connect(self):
         print(f'Client connected to namespace: {self.namespace}, stop_key = {self.stop_signal_key}')
 

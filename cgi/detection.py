@@ -42,25 +42,13 @@ def async_call(json_data, namespace, dynamicNamespace, max_call_times=10):
 @register_route(url_prefix + "/call", "检测服务调用", "POST")
 def call():
     json_data = request.get_json()
-    if json_data['supportInput']['type'] == CAMERA_TYPE:
+    if json_data['supportInput']['type'] in [CAMERA_TYPE, VIDEO_URL_TYPE]:
+        source = json_data['supportInput']['type']
         unique_id = str(uuid.uuid4())
         namespace = '/' + unique_id
         dynamicNamespace = DynamicNamespace(namespace, unique_id,
-                                            service_name=DetectionService.name, source=CAMERA_TYPE)
-        json_data['stopSignalKey'] = dynamicNamespace.stop_signal_key
-        json_data['queueName'] = dynamicNamespace.queue_name
-        json_data['logKey'] = dynamicNamespace.log_key
-        return async_call(json_data, namespace, dynamicNamespace)
-    elif json_data['supportInput']['type'] == VIDEO_URL_TYPE:
-        unique_id = str(uuid.uuid4())
-        namespace = '/' + unique_id
-        dynamicNamespace = DynamicNamespace(namespace, unique_id,
-                                            service_name=DetectionService.name,
-                                            source=VIDEO_URL_TYPE)
-        json_data['stopSignalKey'] = dynamicNamespace.stop_signal_key
-        json_data['logKey'] = dynamicNamespace.log_key
-        json_data['videoProgressKey'] = dynamicNamespace.video_progress_key
-        json_data['taskId'] = dynamicNamespace.unique_id
+                                            service_name=DetectionService.name, source=source)
+        json_data = dynamicNamespace.set_json_data(json_data)
         return async_call(json_data, namespace, dynamicNamespace)
     else:
         output: str = recall(json_data)
