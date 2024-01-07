@@ -29,12 +29,12 @@ class ObjectStorageService:
         return url
 
     @rpc
-    def upload_object(self, object_path):
+    def upload_object(self, object_path, new_file_name=None):
         client = self.minio_storage.client
         bucket_name = self.minio_storage.bucket_name
         file_name, file_ext = get_filename_and_ext(object_path)
         unique_id = str(uuid.uuid4())
-        new_file_name = f"{file_name}_{unique_id}{file_ext}"
+        new_file_name = new_file_name if new_file_name else f"{file_name}_{unique_id}{file_ext}"
         content_type = "application/octet-stream"
         if 'mp4' in file_ext:
             content_type = "video/mp4"

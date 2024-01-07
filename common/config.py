@@ -12,3 +12,9 @@ class Config:
 
 
 config = Config()
+
+
+def get_rpc_config():
+    return {
+        "AMQP_URI": config.get("rabbitmq_url")
+    }

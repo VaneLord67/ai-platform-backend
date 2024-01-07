@@ -3,10 +3,10 @@ import uuid
 from flask import request, Blueprint
 
 from common.api_response import APIResponse
+from common.error_code import ErrorCodeEnum
 from microservice.track import TrackService
 from model.box import Box
 from model.support_input import CAMERA_TYPE
-from model.track_result import TrackResult
 from .singleton import rpc, socketio, register_route
 from .socketio_namespace import DynamicNamespace
 
@@ -18,6 +18,7 @@ track_bp = Blueprint('track', __name__, url_prefix=url_prefix)
 @register_route(url_prefix + "/call", "调用跟踪服务", "POST")
 def call():
     json_data = request.get_json()
+    call_cnt = 0
     if json_data['supportInput']['type'] == CAMERA_TYPE:
         unique_id = str(uuid.uuid4())
         namespace = '/' + unique_id
@@ -27,12 +28,22 @@ def call():
         json_data['roiKey'] = dynamicNamespace.roi_key
         json_data['logKey'] = dynamicNamespace.log_key
         output_dict: dict = rpc.track_service.track(json_data)
+        while output_dict is None:
+            output_dict = rpc.track_service.track(json_data)
+            call_cnt += 1
+            if call_cnt >= 10:
+                return APIResponse.fail_with_error_code_enum(ErrorCodeEnum.SERVICE_BUSY_ERROR).flask_response()
         service_unique_id = output_dict['unique_id']
         dynamicNamespace.service_unique_id = service_unique_id
         socketio.on_namespace(dynamicNamespace)
         return APIResponse.success_with_data(namespace).flask_response()
     else:
         output_dict: dict = rpc.track_service.track(json_data)
+        while output_dict is None:
+            output_dict = rpc.track_service.track(json_data)
+            call_cnt += 1
+            if call_cnt >= 10:
+                return APIResponse.fail_with_error_code_enum(ErrorCodeEnum.SERVICE_BUSY_ERROR).flask_response()
         url = output_dict['url']
         frame_strs = output_dict['frames']
         logs = output_dict['logs']

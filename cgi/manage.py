@@ -1,3 +1,5 @@
+import time
+
 from flask import request, Blueprint
 
 from common.api_response import APIResponse
@@ -17,7 +19,6 @@ def get_service_list():
     for service_str in service_strs:
         services.append(ServiceInfo().from_json(service_str))
     response = APIResponse.success_with_data(services)
-    response.to_dict()
     return response.to_dict()
 
 
@@ -46,3 +47,11 @@ def start_service():
     service_name = json_dict['serviceName']
     rpc.manage_service.run_service(service_name)
     return APIResponse.success().to_dict()
+
+
+@model_manage_bp.route('/task/progress', methods=['GET'])
+@register_route(url_prefix + "/task/progress", "获取任务进度", "GET")
+def get_task_progress():
+    task_id = request.args.get("taskId")
+    progress = rpc.manage_service.get_task_progress(task_id)
+    return APIResponse.success_with_data(progress).flask_response()

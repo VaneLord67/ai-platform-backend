@@ -74,7 +74,11 @@ class TrackService:
     @rpc
     def track(self, args: dict):
         self.state_lock.acquire()
+        if self.service_info.state != ServiceReadyState:
+            return None
+
         supportInput = SupportInput().from_dict(args['supportInput'])
+        self.service_info.task_type = supportInput.type
         try:
             self.service_info.state = ServiceRunningState
             hyperparameters = []

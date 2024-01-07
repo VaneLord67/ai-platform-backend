@@ -59,3 +59,10 @@ class ManageService:
         subprocess.Popen(["start", "nameko", "run",
                           f"microservice.{module_name}:{service_name.title().replace('_', '')}"],
                          shell=True)
+
+    @rpc
+    def get_task_progress(self, task_id):
+        client = self.redis_storage.client
+        progress = client.get(task_id)
+        return str(progress)
+

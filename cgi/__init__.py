@@ -13,7 +13,7 @@ from common.config import config
 
 
 def create_app():
-    flaskApp = Flask(__name__)
+    flaskApp = Flask('ai-platform')
     flaskApp.config['SECRET_KEY'] = config.get("jwt_secret")
     flaskApp.config.update(dict(
         NAMEKO_AMQP_URI=config.get("rabbitmq_url")

@@ -10,6 +10,7 @@ class DetectionOutput(JsonBase):
         self.urls = []
         self.frames: List[List[Box]] = []
         self.logs: List[str] = []
+        self.busy: bool = False
 
     def __json__(self):
         return self.__str__()
