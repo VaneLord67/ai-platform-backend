@@ -7,6 +7,7 @@ from common.error_code import ErrorCodeEnum
 from microservice.track import TrackService
 from model.box import Box
 from model.support_input import CAMERA_TYPE, VIDEO_URL_TYPE
+from .ai_common import async_call, recall
 from .singleton import rpc, socketio, register_route
 from .socketio_namespace import DynamicNamespace
 
@@ -14,25 +15,12 @@ url_prefix = '/model/track'
 track_bp = Blueprint('track', __name__, url_prefix=url_prefix)
 
 
-def recall(json_data, max_call_times=10):
-    call_cnt = 0
-    output_dict: dict = rpc.track_service.track(json_data)
-    while output_dict['busy']:
-        output_dict: dict = rpc.track_service.track(json_data)
-        call_cnt += 1
-        if call_cnt >= max_call_times:
-            return None
-    return output_dict
+def call_function(json_data):
+    return rpc.track_service.call(json_data)
 
 
-def async_call(json_data, namespace, dynamicNamespace, max_call_times=10):
-    output_dict: dict = recall(json_data, max_call_times)
-    if output_dict is None:
-        return APIResponse.fail_with_error_code_enum(ErrorCodeEnum.SERVICE_BUSY_ERROR).flask_response()
-    service_unique_id = output_dict['unique_id']
-    dynamicNamespace.service_unique_id = service_unique_id
-    socketio.on_namespace(dynamicNamespace)
-    return APIResponse.success_with_data(namespace).flask_response()
+def busy_check_function(output):
+    return output['busy']
 
 
 @track_bp.route('/call', methods=['POST'])
@@ -40,17 +28,15 @@ def async_call(json_data, namespace, dynamicNamespace, max_call_times=10):
 def call():
     json_data = request.get_json()
     if json_data['supportInput']['type'] in [CAMERA_TYPE, VIDEO_URL_TYPE]:
-        source = json_data['supportInput']['type']
-        unique_id = str(uuid.uuid4())
-        namespace = '/' + unique_id
+        source, namespace, unique_id = DynamicNamespace.init_parameter(json_data)
         dynamicNamespace = DynamicNamespace(namespace, unique_id,
                                             service_name=TrackService.name,
                                             source=source,
                                             )
         json_data = dynamicNamespace.set_json_data(json_data)
-        return async_call(json_data, namespace, dynamicNamespace)
+        return async_call(call_function, busy_check_function, json_data, namespace, dynamicNamespace)
     else:
-        output_dict: dict = recall(json_data)
+        output_dict: dict = recall(call_function, busy_check_function, json_data)
         if output_dict is None:
             return APIResponse.fail_with_error_code_enum(ErrorCodeEnum.SERVICE_BUSY_ERROR).flask_response()
         url = output_dict['url']

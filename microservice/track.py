@@ -1,29 +1,24 @@
-import multiprocessing
-import multiprocessing
+import threading
 import threading
 import uuid
-from datetime import timedelta
-from typing import Union
 
-import redis
 from nameko.events import event_handler, BROADCAST
 from nameko.rpc import rpc, RpcProxy
-from nameko.standalone.rpc import ClusterRpcProxy
 
 from ais.yolo import YoloArg, call_yolo
-from common import config
-from common.util import connect_to_database, download_file, clear_video_temp_resource
+from common.util import connect_to_database, clear_video_temp_resource
+from microservice.ai_common import handle_video, handle_camera, call_init, parse_hyperparameters, after_video_call
 from microservice.object_storage import ObjectStorageService
 from microservice.redis_storage import RedisStorage
 from microservice.service_default import default_state_change_handler, default_close_event_handler, \
     default_close_one_event_handler, default_state_report_handler
 from model.ai_model import AIModel
 from model.hyperparameter import Hyperparameter
-from model.service_info import ServiceInfo, ServiceReadyState, ServiceRunningState
+from model.service_info import ServiceInfo, ServiceReadyState
 from model.support_input import *
 
 
-def initStateInfo():
+def init_state_info():
     service_info = ServiceInfo()
 
     hp_batch_size = Hyperparameter()
@@ -50,7 +45,7 @@ class TrackService:
     name = "track_service"
 
     unique_id = str(uuid.uuid4())
-    service_info = initStateInfo()
+    service_info = init_state_info()
     state_lock = threading.Lock()
 
     redis_storage = RedisStorage()
@@ -73,48 +68,20 @@ class TrackService:
         default_close_one_event_handler(payload, self.redis_storage.client)
 
     @rpc
-    def track(self, args: dict):
+    def call(self, args: dict):
         self.state_lock.acquire()
         supportInput = SupportInput().from_dict(args['supportInput'])
         try:
-            output = {
-                'busy': False,
-            }
-            if self.service_info.state != ServiceReadyState:
-                output['busy'] = True
+            output = call_init(self.service_info, supportInput, self.unique_id)
+            if output['busy']:
                 return output
-            self.service_info.task_type = supportInput.type
-            self.service_info.state = ServiceRunningState
-            hyperparameters = []
-            if 'hyperparameters' in args:
-                hps = args['hyperparameters']
-                for hp in hps:
-                    hyperparameters.append(Hyperparameter().from_dict(hp))
+            hyperparameters = parse_hyperparameters(args)
             if supportInput.type == VIDEO_URL_TYPE:
-                video_url = supportInput.value
-                video_progress_key = args['videoProgressKey']
-
-                video_name, video_path = download_file(video_url)
-                task_id = str(uuid.uuid4()) if 'taskId' not in args else args['taskId']
-                output_video_path = f"temp/output_{video_name}"
-                output_jsonl_path = f"temp/output_{task_id}.jsonl"
-
-                multiprocessing.Process(target=TrackService.handleVideo, daemon=True,
-                                        args=[video_path, output_video_path, output_jsonl_path, video_progress_key,
-                                              hyperparameters, task_id, self.unique_id]).start()
-                output['task_id'] = task_id
-                output['unique_id'] = self.unique_id
+                handle_video(TrackService.handle_video, args, hyperparameters, self.unique_id)
+                output['task_id'] = args['taskId']
                 return output
             elif supportInput.type == CAMERA_TYPE:
-                camera_id = supportInput.value
-                stop_signal_key = args['stopSignalKey']
-                camera_data_queue_name = args['queueName']
-                log_key = args['logKey']
-                self.redis_storage.client.expire(name=camera_data_queue_name, time=timedelta(hours=24))
-                multiprocessing.Process(target=TrackService.handleCamera, daemon=True,
-                                        args=[camera_id, hyperparameters, stop_signal_key,
-                                              camera_data_queue_name, log_key]).start()
-                output['unique_id'] = self.unique_id
+                handle_camera(TrackService.handle_camera, args, hyperparameters)
                 return output
             return output
         finally:
@@ -123,19 +90,19 @@ class TrackService:
             self.state_lock.release()
 
     @event_handler("manage_service", name + "state_change", handler_type=BROADCAST, reliable_delivery=False)
-    def cameraStateChangeHandler(self, payload):
+    def state_change_handler(self, payload):
         default_state_change_handler(self.unique_id, payload, self.state_lock, self.service_info, ServiceReadyState)
 
     @staticmethod
-    def handleCamera(camera_id, hyperparameters, stop_signal_key, camera_data_queue_name, log_key):
+    def handle_camera(camera_id, hyperparameters, stop_signal_key, camera_data_queue_name, log_key):
         arg = YoloArg(camera_id=camera_id, stop_signal_key=stop_signal_key,
                       queue_name=camera_data_queue_name, is_track=True, is_show=True,
                       hyperparameters=hyperparameters, log_key=log_key)
         call_yolo(arg)
 
     @staticmethod
-    def handleVideo(video_path, video_output_path, video_output_json_path, video_progress_key,
-                    hyperparameters, task_id, service_unique_id):
+    def handle_video(video_path, video_output_path, video_output_json_path, video_progress_key,
+                     hyperparameters, task_id, service_unique_id):
         try:
             arg = YoloArg(video_path=video_path,
                           is_track=True,
@@ -145,17 +112,7 @@ class TrackService:
                           video_progress_key=video_progress_key,
                           )
             call_yolo(arg)
-            with ClusterRpcProxy(config.get_rpc_config()) as cluster_rpc:
-                video_url = cluster_rpc.object_storage_service.upload_object(video_output_path)
-                json_url = cluster_rpc.object_storage_service.upload_object(video_output_json_path)
-                client: Union[redis.StrictRedis, None] = redis.StrictRedis.from_url(config.config.get("redis_url"))
-                mapping = {
-                    "video_url": video_url,
-                    "json_url": json_url,
-                }
-                client.hset(name=task_id, mapping=mapping)
-                client.expire(name=task_id, time=timedelta(hours=24))
-                cluster_rpc.manage_service.change_state_to_ready(TrackService.name, service_unique_id)
-                print(f"video task done, task_id:{task_id}")
+            after_video_call(video_output_path, video_output_json_path,
+                             task_id, TrackService.name, service_unique_id)
         finally:
             clear_video_temp_resource(video_path, video_output_path, video_output_json_path)

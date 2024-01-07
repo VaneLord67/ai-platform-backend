@@ -58,7 +58,7 @@ def after_request(response):
 
     status_code = None
     json_dict = response.get_json()
-    if 'code' in json_dict and json_dict['code'] != 1:
+    if json_dict and 'code' in json_dict and json_dict['code'] != 1:
         # 如果服务端侧业务code不为1，则说明出错，那么令status_code为500，方便计算流量展示业务中的错误率
         status_code = 500
 

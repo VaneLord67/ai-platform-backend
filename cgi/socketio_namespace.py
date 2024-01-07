@@ -1,4 +1,5 @@
 import base64
+import uuid
 from datetime import timedelta
 from typing import Union
 
@@ -122,3 +123,10 @@ class DynamicNamespace(Namespace):
         elif self.source == CAMERA_TYPE:
             self.on_stop_camera(data=None)
         self.socketio.server.namespace_handlers.pop(self.namespace)
+
+    @staticmethod
+    def init_parameter(json_data):
+        source = json_data['supportInput']['type']
+        unique_id = str(uuid.uuid4())
+        namespace = '/' + unique_id
+        return source, namespace, unique_id
