@@ -1,5 +1,3 @@
-import time
-
 from flask import request, Blueprint
 
 from common.api_response import APIResponse
@@ -48,10 +46,3 @@ def start_service():
     rpc.manage_service.run_service(service_name)
     return APIResponse.success().to_dict()
 
-
-@model_manage_bp.route('/task/progress', methods=['GET'])
-@register_route(url_prefix + "/task/progress", "获取任务进度", "GET")
-def get_task_progress():
-    task_id = request.args.get("taskId")
-    progress = rpc.manage_service.get_task_progress(task_id)
-    return APIResponse.success_with_data(progress).flask_response()

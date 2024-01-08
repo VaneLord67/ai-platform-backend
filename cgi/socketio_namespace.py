@@ -1,4 +1,5 @@
 import base64
+import logging
 import uuid
 from datetime import timedelta
 from typing import Union
@@ -46,9 +47,8 @@ class DynamicNamespace(Namespace):
             json_data['taskId'] = self.unique_id
         return json_data
 
-
     def on_connect(self):
-        print(f'Client connected to namespace: {self.namespace}, stop_key = {self.stop_signal_key}')
+        logging.info(f'Client connected to namespace: {self.namespace}, stop_key = {self.stop_signal_key}')
 
     def on_progress_retrieve(self, data):
         client = self.redis_client
@@ -60,7 +60,7 @@ class DynamicNamespace(Namespace):
             video_url = client.hget(name=self.unique_id, key="video_url").decode('utf-8')
             json_url = client.hget(name=self.unique_id, key="json_url").decode('utf-8')
             self.emit(event='video_task_done', namespace=self.namespace, data=[video_url, json_url])
-            print(f'emit video_task_done event, task_id: {self.unique_id}')
+            logging.info(f'emit video_task_done event, task_id: {self.unique_id}')
         else:
             progress: Union[bytes, None] = client.get(self.video_progress_key)
             if progress:
@@ -76,7 +76,7 @@ class DynamicNamespace(Namespace):
         client = self.redis_client
         logs = get_log_from_redis(client, self.log_key)
         if logs and len(logs) > 0:
-            # print("logs:", logs)
+            # logging.info("logs:", logs)
             self.emit(event='camera_log', namespace=self.namespace, data=logs)
         result = client.blpop([self.queue_name], timeout=1)  # timeout for seconds
         queue_data = result[1] if result else None
@@ -96,7 +96,7 @@ class DynamicNamespace(Namespace):
         self.emit(event='camera_data', namespace=self.namespace, data=jpg_as_text)
 
     def on_stop_camera(self, data):
-        print("stop camera...")
+        logging.info("stop camera...")
         pipeline = self.redis_client.pipeline()
         pipeline.set(self.stop_signal_key, "1", ex=timedelta(seconds=60))
         pipeline.delete(self.queue_name)
@@ -117,7 +117,7 @@ class DynamicNamespace(Namespace):
         rpc.manage_service.change_state_to_ready(self.service_name, self.service_unique_id)
 
     def on_disconnect(self):
-        print(f'Client disconnected from namespace: {self.namespace}')
+        logging.info(f'Client disconnected from namespace: {self.namespace}')
         if self.source == VIDEO_URL_TYPE:
             self.clear_video_resource()
         elif self.source == CAMERA_TYPE:

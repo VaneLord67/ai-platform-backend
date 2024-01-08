@@ -1,3 +1,4 @@
+import logging
 import time
 import traceback
 from datetime import datetime
@@ -27,7 +28,7 @@ def before_request():
     if "Authorization" in request.headers:
         user = User()
         authorization = request.headers.get("Authorization")
-        # print(f"auth = {authorization}")
+        # logging.info(f"auth = {authorization}")
         if authorization != "":
             jwt_dict = decode_jwt(authorization)
             if jwt_dict:
@@ -47,7 +48,7 @@ def before_request():
         act = request.method  # act设计为HTTP API的method，例如GET POST DELETE等
 
         ok = enforcer.enforce(sub, obj, act)
-        # print(f'casbin info: {sub} {obj} {act} -> {ok}')
+        # logging.info(f'casbin info: {sub} {obj} {act} -> {ok}')
         if not ok:
             return APIResponse.fail_with_error_code_enum(ErrorCodeEnum.AUTH_ERROR).flask_response()
 
@@ -80,11 +81,11 @@ def after_request(response):
 
 @app.errorhandler(Exception)
 def handle_error(error):
-    print(error)
+    logging.info(error)
     traceback.print_exc()
     return APIResponse(code=0, message=str(error)).flask_response()
 
 
 if __name__ == '__main__':
-    # print("start socketio")
+    # logging.info("start socketio")
     socketio.run(app, host='0.0.0.0', debug=False, port=8086)
