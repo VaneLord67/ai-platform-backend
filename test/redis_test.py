@@ -1,12 +1,8 @@
-from typing import Union
-
-import redis
-
-from common.config import config
+from common.util import create_redis_client
 
 if __name__ == '__main__':
-    client: Union[redis.StrictRedis, None] = redis.StrictRedis.from_url(config.get("redis_url"))
-    result = client.type(name='206b3641-65eb-4fed-8613-aee1faaf80aa1')
+    client = create_redis_client()
+    result = client.type(name='206b3641-65eb-4fed-8613-aee1faaf80aa')
     print(type(result))
     print(result)
 

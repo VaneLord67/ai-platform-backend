@@ -6,6 +6,7 @@ import redis
 
 from ais.opencv_track import set_roi_to_redis
 from common.config import config
+from common.util import create_redis_client
 from model.track_result import TrackResult
 
 
@@ -39,7 +40,7 @@ def show_result(client, queue_name):
 if __name__ == '__main__':
     queue_name = "my_queue"
     stopSignalKey = "stop"
-    client: Union[redis.StrictRedis, None] = redis.StrictRedis.from_url(config.get("redis_url"))
+    client = create_redis_client()
     # show_result(client, queue_name)
 
     roi = TrackResult(844, 337, 441, 610)

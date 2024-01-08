@@ -1,5 +1,4 @@
 import json
-import logging
 import os
 import re
 import shutil
@@ -16,6 +15,7 @@ import requests
 from mysql.connector import Error
 
 from common.config import config
+from common.log import LOGGER
 
 
 class JsonEncoder(json.JSONEncoder):
@@ -125,7 +125,7 @@ def connect_to_database():
             return connection
 
     except Error as e:
-        logging.info(f"Error: {e}")
+        LOGGER.info(f"Error: {e}")
         return None
 
 
@@ -139,7 +139,7 @@ def download_file(url, temp_dir='temp'):
             f.write(response.content)
         return file_name, file_path
     else:
-        logging.info(f"Failed to download file from {url}. Status code: {response.status_code}")
+        LOGGER.info(f"Failed to download file from {url}. Status code: {response.status_code}")
         return None
 
 
@@ -175,7 +175,7 @@ def generate_video(output_video_path, folder_path, fps=1.0):
     # 将图片逐一写入视频
     img_paths = sorted(img_paths, key=extract_number_from_path)
     for img_path in img_paths:
-        # logging.info(f"img_path = {img_path}")
+        # LOGGER.info(f"img_path = {img_path}")
         video.write(cv2.imread(img_path))
     # 保存视频
     video.release()
@@ -187,7 +187,7 @@ def get_video_fps(video_src: str):
     cap = cv2.VideoCapture(video_src)
     # 检查视频是否成功打开
     if not cap.isOpened():
-        logging.info("Error: Could not open video file:", video_src)
+        LOGGER.info("Error: Could not open video file:", video_src)
         return None
     # 获取视频帧率
     fps = cap.get(cv2.CAP_PROP_FPS)
@@ -203,32 +203,32 @@ def clear_video_temp_resource(video_path, output_video_path, output_json_path):
     if os.path.exists(video_path):
         try:
             os.remove(video_path)
-            logging.info(f'File {video_path} deleted successfully.')
+            LOGGER.info(f'File {video_path} deleted successfully.')
         except OSError as e:
-            logging.info(f'Error deleting file {video_path}: {e}')
+            LOGGER.info(f'Error deleting file {video_path}: {e}')
     if os.path.exists(output_video_path):
         try:
             os.remove(output_video_path)
-            logging.info(f'File {output_video_path} deleted successfully.')
+            LOGGER.info(f'File {output_video_path} deleted successfully.')
         except OSError as e:
-            logging.info(f'Error deleting file {output_video_path}: {e}')
+            LOGGER.info(f'Error deleting file {output_video_path}: {e}')
     if os.path.exists(output_json_path):
         try:
             os.remove(output_json_path)
-            logging.info(f'File {output_json_path} deleted successfully.')
+            LOGGER.info(f'File {output_json_path} deleted successfully.')
         except OSError as e:
-            logging.info(f'Error deleting file {output_json_path}: {e}')
+            LOGGER.info(f'Error deleting file {output_json_path}: {e}')
 
 
 def clear_image_temp_resource(img_path, output_path):
     if os.path.exists(img_path):
         try:
             os.remove(img_path)
-            logging.info(f'File {img_path} deleted successfully.')
+            LOGGER.info(f'File {img_path} deleted successfully.')
         except OSError as e:
-            logging.info(f'Error deleting file {img_path}: {e}')
+            LOGGER.info(f'Error deleting file {img_path}: {e}')
     shutil.rmtree(output_path)
-    logging.info(f"Folder '{output_path}' deleted successfully.")
+    LOGGER.info(f"Folder '{output_path}' deleted successfully.")
 
 
 def get_log_from_redis(redis_client: redis.StrictRedis, log_key: str):

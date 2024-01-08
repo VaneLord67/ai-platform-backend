@@ -1,4 +1,3 @@
-import logging
 import multiprocessing
 import os
 import threading
@@ -13,6 +12,7 @@ from nameko.rpc import RpcProxy, rpc
 from nameko.standalone.rpc import ClusterRpcProxy
 
 from common import config
+from common.log import LOGGER
 from common.util import download_file, clear_image_temp_resource, create_redis_client
 from microservice.manage import ManageService
 from microservice.object_storage import ObjectStorageService
@@ -46,7 +46,7 @@ class AIBaseService(ABC):
 
     @staticmethod
     def bar():
-        logging.info("hello!")
+        LOGGER.info("hello!")
 
     @event_handler(ManageService.name, name + "state_report", handler_type=BROADCAST, reliable_delivery=False)
     def state_report(self, payload):
@@ -60,20 +60,20 @@ class AIBaseService(ABC):
 
     @event_handler(ManageService.name, name + "close_event", handler_type=BROADCAST, reliable_delivery=False)
     def close_event_handler(self, payload):
-        logging.info("receive close event")
+        LOGGER.info("receive close event")
         raise KeyboardInterrupt
 
     @event_handler(ManageService.name, name + "close_one_event", handler_type=BROADCAST, reliable_delivery=False)
     def close_one_event_handler(self, payload):
-        logging.info("receive close one event")
+        LOGGER.info("receive close one event")
         close_unique_id = payload
-        logging.info(f"close_unique_id = {close_unique_id}")
+        LOGGER.info(f"close_unique_id = {close_unique_id}")
         lock_ok = self.redis_storage.client.set(close_unique_id, "locked", ex=timedelta(minutes=1), nx=True)
         if lock_ok:
-            logging.info("get close lock, raise KeyboardInterrupt...")
+            LOGGER.info("get close lock, raise KeyboardInterrupt...")
             raise KeyboardInterrupt
         else:
-            logging.info("close lock failed, continue running...")
+            LOGGER.info("close lock failed, continue running...")
 
     @event_handler(ManageService.name, name + "state_change", handler_type=BROADCAST, reliable_delivery=False)
     def state_to_ready_handler(self, payload):
@@ -138,7 +138,7 @@ class AIBaseService(ABC):
         output_path = f"temp/{img_name}_{unique_id}/"
         try:
             os.makedirs(output_path, exist_ok=True)
-            logging.info(f"Folder '{output_path}' created successfully.")
+            LOGGER.info(f"Folder '{output_path}' created successfully.")
             return self.single_image_cpp_call(img_path, output_path, self.hyperparameters)
         finally:
             clear_image_temp_resource(img_path, output_path)
@@ -228,4 +228,4 @@ class AIBaseService(ABC):
             client.hset(name=task_id, mapping=mapping)
             client.expire(name=task_id, time=timedelta(hours=24))
             cluster_rpc.manage_service.change_state_to_ready(service_name, service_unique_id)
-            logging.info(f"video task done, task_id:{task_id}")
+            LOGGER.info(f"video task done, task_id:{task_id}")

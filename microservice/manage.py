@@ -1,4 +1,3 @@
-import logging
 import subprocess
 import time
 import uuid
@@ -6,6 +5,7 @@ import uuid
 from nameko.events import EventDispatcher
 from nameko.rpc import rpc
 
+from common.log import LOGGER
 from microservice.load_dependency import LoadDependency
 from microservice.mysql_storage import MysqlStorage
 from microservice.redis_storage import RedisStorage
@@ -44,19 +44,19 @@ class ManageService:
 
     @rpc
     def close_all_instance(self, service_name):
-        logging.info(f"close all instance: {service_name}")
+        LOGGER.info(f"close all instance: {service_name}")
         self.dispatch(f"{service_name}close_event", service_name)
 
     @rpc
     def close_one_instance(self, service_name):
-        logging.info(f"close one instance: {service_name}")
+        LOGGER.info(f"close one instance: {service_name}")
         close_unique_id = str(uuid.uuid4())
         self.dispatch(f"{service_name}close_one_event", close_unique_id)
 
     @rpc
     def run_service(self, service_name):
         module_name = service_name.replace("_service", "")
-        logging.info(f"start a {module_name} instance...")
+        LOGGER.info(f"start a {module_name} instance...")
         subprocess.Popen(["start", "nameko", "run",
                           f"microservice.{module_name}:{service_name.title().replace('_', '')}"],
                          shell=True)

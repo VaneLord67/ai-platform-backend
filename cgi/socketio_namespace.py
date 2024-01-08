@@ -1,16 +1,14 @@
 import base64
-import logging
 import uuid
 from datetime import timedelta
 from typing import Union
 
-import redis
 from flask_socketio import Namespace
 
 from ais.opencv_track import set_roi_to_redis
 from cgi.singleton import rpc
-from common.config import config
-from common.util import get_log_from_redis
+from common.log import LOGGER
+from common.util import get_log_from_redis, create_redis_client
 from microservice.track import TrackService
 from model.support_input import VIDEO_URL_TYPE, CAMERA_TYPE
 from model.track_result import TrackResult
@@ -30,7 +28,7 @@ class DynamicNamespace(Namespace):
         self.service_unique_id = service_unique_id
         self.log_key = unique_id + "_log"
         self.video_progress_key: str = unique_id + "_video_progress"
-        self.redis_client: Union[redis.StrictRedis, None] = redis.StrictRedis.from_url(config.get("redis_url"))
+        self.redis_client = create_redis_client()
 
         if self.service_name == TrackService.name:
             self.roi_key = unique_id + "_roi"
@@ -48,7 +46,7 @@ class DynamicNamespace(Namespace):
         return json_data
 
     def on_connect(self):
-        logging.info(f'Client connected to namespace: {self.namespace}, stop_key = {self.stop_signal_key}')
+        LOGGER.info(f'Client connected to namespace: {self.namespace}, stop_key = {self.stop_signal_key}')
 
     def on_progress_retrieve(self, data):
         client = self.redis_client
@@ -60,7 +58,7 @@ class DynamicNamespace(Namespace):
             video_url = client.hget(name=self.unique_id, key="video_url").decode('utf-8')
             json_url = client.hget(name=self.unique_id, key="json_url").decode('utf-8')
             self.emit(event='video_task_done', namespace=self.namespace, data=[video_url, json_url])
-            logging.info(f'emit video_task_done event, task_id: {self.unique_id}')
+            LOGGER.info(f'emit video_task_done event, task_id: {self.unique_id}')
         else:
             progress: Union[bytes, None] = client.get(self.video_progress_key)
             if progress:
@@ -76,7 +74,7 @@ class DynamicNamespace(Namespace):
         client = self.redis_client
         logs = get_log_from_redis(client, self.log_key)
         if logs and len(logs) > 0:
-            # logging.info("logs:", logs)
+            # LOGGER.info("logs:", logs)
             self.emit(event='camera_log', namespace=self.namespace, data=logs)
         result = client.blpop([self.queue_name], timeout=1)  # timeout for seconds
         queue_data = result[1] if result else None
@@ -96,7 +94,7 @@ class DynamicNamespace(Namespace):
         self.emit(event='camera_data', namespace=self.namespace, data=jpg_as_text)
 
     def on_stop_camera(self, data):
-        logging.info("stop camera...")
+        LOGGER.info("stop camera...")
         pipeline = self.redis_client.pipeline()
         pipeline.set(self.stop_signal_key, "1", ex=timedelta(seconds=60))
         pipeline.delete(self.queue_name)
@@ -117,7 +115,7 @@ class DynamicNamespace(Namespace):
         rpc.manage_service.change_state_to_ready(self.service_name, self.service_unique_id)
 
     def on_disconnect(self):
-        logging.info(f'Client disconnected from namespace: {self.namespace}')
+        LOGGER.info(f'Client disconnected from namespace: {self.namespace}')
         if self.source == VIDEO_URL_TYPE:
             self.clear_video_resource()
         elif self.source == CAMERA_TYPE:

@@ -6,6 +6,7 @@ import redis
 
 from ais import track_opencv
 from common.config import config
+from common.util import create_redis_client
 from model.hyperparameter import Hyperparameter
 from model.track_result import TrackResult
 
@@ -116,7 +117,7 @@ if __name__ == '__main__':
     # results = call_track(arg)
     # print(f"results = {results}")
 
-    client: Union[redis.StrictRedis, None] = redis.StrictRedis.from_url(config.get("redis_url"))
+    client = create_redis_client()
     stop_signal_key = "stop"
     queue_name = "my_queue"
     roi_key = "roi"

@@ -133,7 +133,7 @@ if __name__ == '__main__':
 
     # queue_name = "my_queue"
     # stopSignalKey = "stop"
-    # client: Union[redis.StrictRedis, None] = redis.StrictRedis.from_url(config.get("redis_url"))
+    # client = create_redis_client()
     # client.delete(queue_name)
     # client.delete(stopSignalKey)
     # yoloArg = YoloArg(camera_id=0, batch_size=8, is_show=True,
