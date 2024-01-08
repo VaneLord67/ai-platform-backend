@@ -3,6 +3,11 @@ import json
 from cgi.singleton import rpc, socketio
 from common.api_response import APIResponse
 from common.error_code import ErrorCodeEnum
+from model.support_input import CAMERA_TYPE, VIDEO_URL_TYPE
+
+
+def default_busy_check_function(output):
+    return output['busy']
 
 
 def recall(call_function, busy_check_function, json_data, max_call_times=10):
@@ -29,3 +34,7 @@ def async_call(call_function, busy_check_function, json_data, namespace, dynamic
     dynamicNamespace.service_unique_id = service_unique_id
     socketio.on_namespace(dynamicNamespace)
     return APIResponse.success_with_data(namespace).flask_response()
+
+
+def if_async_call_type(json_data):
+    return json_data['supportInput']['type'] in [CAMERA_TYPE, VIDEO_URL_TYPE]

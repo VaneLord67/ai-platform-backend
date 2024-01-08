@@ -1,23 +1,14 @@
-import os
-import threading
-import time
-import uuid
-
 from nameko.events import event_handler, BROADCAST
-from nameko.rpc import rpc, RpcProxy
+from nameko.standalone.rpc import ClusterRpcProxy
 
 from ais.yolo import YoloArg, call_yolo
-from common.util import connect_to_database, download_file, find_any_file, clear_image_temp_resource, \
-    get_log_from_redis, clear_video_temp_resource
-from microservice.ai_common import handle_video, handle_camera, after_video_call
-from microservice.object_storage import ObjectStorageService
-from microservice.redis_storage import RedisStorage
-from microservice.service_default import default_state_change_handler, default_state_report_handler, \
-    default_close_event_handler, default_close_one_event_handler
+from common import config
+from common.util import find_any_file, get_log_from_redis, clear_video_temp_resource, create_redis_client
+from microservice.ai_base import AIBaseService
+from microservice.manage import ManageService
 from model.ai_model import AIModel
-from model.detection_output import DetectionOutput
 from model.hyperparameter import Hyperparameter
-from model.service_info import ServiceInfo, ServiceReadyState, ServiceRunningState
+from model.service_info import ServiceInfo
 from model.support_input import *
 
 
@@ -44,92 +35,41 @@ def init_state_info():
     return service_info
 
 
-class DetectionService:
+class DetectionService(AIBaseService):
     name = "detection_service"
 
-    unique_id = str(uuid.uuid4())
     service_info = init_state_info()
-    state_lock = threading.Lock()
 
-    redis_storage = RedisStorage()
-
-    object_storage_service = RpcProxy(ObjectStorageService.name)
-
-    def __init__(self):
-        self.conn = connect_to_database()
-
-    @event_handler("manage_service", name + "state_report", handler_type=BROADCAST, reliable_delivery=False)
+    @event_handler(ManageService.name, name + "state_report", handler_type=BROADCAST, reliable_delivery=False)
     def state_report(self, payload):
-        default_state_report_handler(payload, self.state_lock, self.service_info, self.redis_storage.client)
+        super().state_report(payload)
 
-    @event_handler("manage_service", name + "close_event", handler_type=BROADCAST, reliable_delivery=False)
+    @event_handler(ManageService.name, name + "close_event", handler_type=BROADCAST, reliable_delivery=False)
     def close_event_handler(self, payload):
-        default_close_event_handler()
+        super().close_event_handler(payload)
 
-    @event_handler("manage_service", name + "close_one_event", handler_type=BROADCAST, reliable_delivery=False)
+    @event_handler(ManageService.name, name + "close_one_event", handler_type=BROADCAST, reliable_delivery=False)
     def close_one_event_handler(self, payload):
-        default_close_one_event_handler(payload, self.redis_storage.client)
+        super().close_event_handler(payload)
 
-    @rpc
-    def call(self, args: dict):
-        self.state_lock.acquire()
-        supportInput = SupportInput().from_dict(args['supportInput'])
-        try:
-            output = DetectionOutput()
-            output.unique_id = self.unique_id
-            if self.service_info.state != ServiceReadyState:
-                output.busy = True
-                return output
-            self.service_info.task_start_time = int(time.time() * 1000)
-            self.service_info.state = ServiceRunningState
-            hyperparameters = []
-            if 'hyperparameters' in args:
-                hps = args['hyperparameters']
-                for hp in hps:
-                    hyperparameters.append(Hyperparameter().from_dict(hp))
-            urls = []
-            frames = []
-            log_strs = []
-            self.service_info.task_type = supportInput.type
-            if supportInput.type == SINGLE_PICTURE_URL_TYPE:
-                img_url = supportInput.value
-                urls, frames, log_strs = self.handle_single_image(img_url, hyperparameters)
-            elif supportInput.type == MULTIPLE_PICTURE_URL_TYPE:
-                img_urls = supportInput.value
-                urls = []
-                frames = []
-                for img_url in img_urls:
-                    single_urls, single_frames, single_logs = self.handle_single_image(img_url, hyperparameters)
-                    urls.extend(single_urls)
-                    frames.extend(single_frames)
-                    log_strs.extend(single_logs)
-            elif supportInput.type == VIDEO_URL_TYPE:
-                handle_video(DetectionService.handle_video, args, hyperparameters, self.unique_id)
-                output.task_id = args['taskId']
-            elif supportInput.type == CAMERA_TYPE:
-                handle_camera(DetectionService.handle_camera, args, hyperparameters)
-            output.urls = urls
-            output.frames = frames
-            output.logs = log_strs
-            return output
-        finally:
-            if supportInput.type not in [CAMERA_TYPE, VIDEO_URL_TYPE]:
-                self.service_info.state = ServiceReadyState
-            self.state_lock.release()
-
-    @event_handler("manage_service", name + "state_change", handler_type=BROADCAST, reliable_delivery=False)
-    def state_change_handler(self, payload):
-        default_state_change_handler(self.unique_id, payload, self.state_lock, self.service_info, ServiceReadyState)
+    @event_handler(ManageService.name, name + "state_change", handler_type=BROADCAST, reliable_delivery=False)
+    def state_to_ready_handler(self, payload):
+        super().state_to_ready_handler(payload)
 
     @staticmethod
-    def handle_camera(camera_id, hyperparameters, stop_signal_key, camera_data_queue_name, log_key):
-        yolo_arg = YoloArg(camera_id=camera_id, stop_signal_key=stop_signal_key, queue_name=camera_data_queue_name,
-                           is_show=True, save_path=None, hyperparameters=hyperparameters, log_key=log_key)
+    def camera_cpp_call(camera_id, hyperparameters, stop_signal_key, camera_data_queue_name, log_key):
+        yolo_arg = YoloArg(camera_id=camera_id,
+                           stop_signal_key=stop_signal_key,
+                           queue_name=camera_data_queue_name,
+                           is_show=True,
+                           save_path=None,
+                           hyperparameters=hyperparameters,
+                           log_key=log_key)
         call_yolo(yolo_arg)
 
     @staticmethod
-    def handle_video(video_path, video_output_path, video_output_json_path, video_progress_key,
-                     hyperparameters, task_id, service_unique_id):
+    def video_cpp_call(video_path, video_output_path, video_output_json_path, video_progress_key,
+                       hyperparameters, task_id, service_unique_id):
         try:
             yolo_arg = YoloArg(video_path=video_path,
                                hyperparameters=hyperparameters,
@@ -138,26 +78,24 @@ class DetectionService:
                                video_progress_key=video_progress_key,
                                )
             call_yolo(yolo_arg)
-            after_video_call(video_output_path, video_output_json_path,
-                             task_id, DetectionService.name, service_unique_id)
+            AIBaseService.after_video_call(video_output_path, video_output_json_path,
+                                           task_id, DetectionService.name, service_unique_id)
         finally:
             clear_video_temp_resource(video_path, video_output_path, video_output_json_path)
 
-    def handle_single_image(self, img_url, hyperparameters):
-        img_name, img_path = download_file(img_url)
-        unique_id = str(uuid.uuid4())
-        output_path = f"temp/{img_name}_{unique_id}/"
-        try:
-            os.makedirs(output_path, exist_ok=True)
-            print(f"Folder '{output_path}' created successfully.")
+    @staticmethod
+    def single_image_cpp_call(img_path, output_path, hyperparameters):
+        yolo_arg = YoloArg(img_path=img_path, save_path=output_path, hyperparameters=hyperparameters)
+        frames = call_yolo(yolo_arg)
+        output_img_path = find_any_file(output_path)
 
-            yolo_arg = YoloArg(img_path=img_path, save_path=output_path, hyperparameters=hyperparameters)
-            frames = call_yolo(yolo_arg)
-            output_img_path = find_any_file(output_path)
+        redis_client = create_redis_client()
+        log_strs = get_log_from_redis(redis_client, yolo_arg.log_key)
 
-            log_strs = get_log_from_redis(self.redis_storage.client, yolo_arg.log_key)
-
-            urls = [self.object_storage_service.upload_object(output_img_path)]
-            return urls, frames, log_strs
-        finally:
-            clear_image_temp_resource(img_path, output_path)
+        with ClusterRpcProxy(config.get_rpc_config()) as cluster_rpc:
+            urls = [cluster_rpc.object_storage_service.upload_object(output_img_path)]
+        return {
+            'urls': urls,
+            'logs': log_strs,
+            'frames': frames,
+        }

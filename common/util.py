@@ -241,6 +241,10 @@ def get_hostname():
     return socket.gethostname()
 
 
+def create_redis_client() -> Union[redis.StrictRedis, None]:
+    return redis.StrictRedis.from_url(config.config.get("redis_url"))
+
+
 if __name__ == '__main__':
     folder_path = r"E:\GraduationDesign\ai-platform-backend\temp\track_test_tiny.mp4_7fe5e0b7-ec83-4fe8-be9c" \
                   r"-ae7bade86498"

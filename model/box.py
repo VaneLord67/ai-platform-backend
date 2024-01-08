@@ -23,7 +23,7 @@ class Box(JsonBase):
         self.top: float = top
         self.confidence: float = confidence
         self.label: int = label
-        self.class_name: str = class_names[label] if label else ""
+        self.class_name: str = class_names[label] if label is not None else ""
         self.track_id: int = track_id
 
     def __json__(self):
