@@ -5,16 +5,16 @@ from typing import Union
 
 from flask_socketio import Namespace
 
-from ais.opencv_track import set_roi_to_redis
 from cgi.singleton import rpc
 from common.log import LOGGER
 from common.util import get_log_from_redis, create_redis_client
-from microservice.track import TrackService
 from model.support_input import VIDEO_URL_TYPE, CAMERA_TYPE
-from model.track_result import TrackResult
 
 
 class DynamicNamespace(Namespace):
+    """
+    这是用于Socket-IO库的辅助类，服务器会给每一个前端创建单独的namespace，在namespace中进行实时数据的传输
+    """
 
     def __init__(self, namespace, unique_id, service_unique_id=None, service_name=None, source=None):
         super().__init__(namespace)
@@ -29,9 +29,6 @@ class DynamicNamespace(Namespace):
         self.log_key = unique_id + "_log"
         self.video_progress_key: str = unique_id + "_video_progress"
         self.redis_client = create_redis_client()
-
-        if self.service_name == TrackService.name:
-            self.roi_key = unique_id + "_roi"
 
     def set_json_data(self, json_data):
         if self.source == CAMERA_TYPE:
@@ -65,10 +62,6 @@ class DynamicNamespace(Namespace):
                 self.emit(event='progress_data', namespace=self.namespace, data=progress.decode('utf-8'))
             else:
                 self.emit(event='progress_data', namespace=self.namespace, data='0.00')
-
-    def on_roi_event(self, roi_data):
-        roi: TrackResult = TrackResult().from_json(roi_data)
-        set_roi_to_redis(roi, self.roi_key, self.redis_client)
 
     def on_camera_retrieve(self, data):
         client = self.redis_client

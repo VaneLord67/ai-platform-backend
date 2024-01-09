@@ -33,8 +33,7 @@ docker run -d --rm --name ai-redis -p 6379:6379 redis
 
 # cgi
 ```cmd
-$env:FLASK_APP = "cgi/main.py"
-python -m flask run --port=8086
+直接在项目根目录下运行cgi/main.py即可
 ```
 
 # microservice
@@ -49,14 +48,10 @@ nameko run microservice.monitor:MonitorService
 ```
 
 # yolo
+附tensorRT-Alpha仓库中进行yolo调用的命令行参数：
 ```cmd
 # 推理图片
 --model=E:/GraduationDesign/yolov8n.trt --size=640 --batch_size=1  --img=E:/GraduationDesign/tensorrt-alpha/data/6406402.jpg --show --savePath=E:\GraduationDesign\tensorOutput
 # 推理视频
 --model=E:/GraduationDesign/yolov8n.trt --size=640 --batch_size=8  --video=E:/GraduationDesign/tensorrt-alpha/data/people.mp4 --show --savePath=E:\GraduationDesign\tensorOutput
-```
-
-```cmd
-"--model=E:/GraduationDesign/yolov8n.trt" --size=640 --batch_size=1  --img=E:/GraduationDesign/tensorrt-alpha/data/6406402.jpg --show --savePath=E:\GraduationDesign\tensorOutput
-
 ```

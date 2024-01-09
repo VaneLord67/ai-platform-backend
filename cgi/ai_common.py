@@ -1,6 +1,6 @@
 import json
 
-from cgi.singleton import rpc, socketio
+from cgi.singleton import socketio
 from common.api_response import APIResponse
 from common.error_code import ErrorCodeEnum
 from model.support_input import CAMERA_TYPE, VIDEO_URL_TYPE
@@ -11,6 +11,7 @@ def default_busy_check_function(output):
 
 
 def recall(call_function, busy_check_function, json_data, max_call_times=10):
+    # 因为我们无法指定nameko要调用的rpc实例，所以这里使用重复调用的方法轮询到空闲的实例
     call_cnt = 0
     output = call_function(json_data)
     while busy_check_function(output):

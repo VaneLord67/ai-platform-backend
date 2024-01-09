@@ -1,5 +1,4 @@
 import time
-import traceback
 from datetime import datetime
 from urllib.parse import urlparse
 
@@ -81,8 +80,7 @@ def after_request(response):
 
 @app.errorhandler(Exception)
 def handle_error(error):
-    LOGGER.info(error)
-    traceback.print_exc()
+    LOGGER.error("error: %s", error, exc_info=True)
     return APIResponse(code=0, message=str(error)).flask_response()
 
 

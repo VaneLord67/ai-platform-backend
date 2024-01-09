@@ -43,6 +43,7 @@ def show_result(client, queue_name):
 
 
 if __name__ == '__main__':
+    # 测试代码：从redis list中读取摄像头数据并用OpenCV展示
     queue_name = "my_queue"
     stopSignalKey = "stop"
     client = create_redis_client()

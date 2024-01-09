@@ -24,6 +24,15 @@ from model.support_input import SupportInput, SINGLE_PICTURE_URL_TYPE, MULTIPLE_
 
 
 class AIBaseService(ABC):
+    """
+    AIBaseService抽象基类，使用模板方法模式设计，用于复用AI微服务的重复代码
+
+    衍生子类需要声明父类的event_handler函数并调用父类处理函数，如果不声明则不会触发事件
+    衍生子类需要实现cpp_call簇的函数，函数内调用pybind绑定的c++接口，如果不实现会在运行期报错
+
+    由于部分cpp_call是使用的多进程进行调用，nameko中的self不能在进程之间进行传递，
+    所以声明为类函数，无法在所谓编译期进行子类实现接口的检查（如果你有更好的方法，可以将其改进）
+    """
     name = "ai_base_service"
 
     unique_id = str(uuid.uuid4())
@@ -39,17 +48,12 @@ class AIBaseService(ABC):
         self.args: Union[dict, None] = None
         self.support_input: Union[SupportInput, None] = None
 
-    @rpc
-    def foo(self):
-        multiprocessing.Process(target=self.bar, daemon=True).start()
-        return "foo done"
-
-    @staticmethod
-    def bar():
-        LOGGER.info("hello!")
-
     @event_handler(ManageService.name, name + "state_report", handler_type=BROADCAST, reliable_delivery=False)
     def state_report(self, payload):
+        """
+        ManageService会发布state_report事件，AI微服务监听到事件后使用redis来进行服务信息的上报，
+        后续ManageService会从redis中收集服务信息
+        """
         redis_list_key = payload
         self.state_lock.acquire()
         try:
@@ -60,23 +64,34 @@ class AIBaseService(ABC):
 
     @event_handler(ManageService.name, name + "close_event", handler_type=BROADCAST, reliable_delivery=False)
     def close_event_handler(self, payload):
-        LOGGER.info("receive close event")
+        LOGGER.info("shutdown service")
+        # 模拟键盘ctrl+c进行服务停止，如果你有更优雅的方法，可以将其改进
         raise KeyboardInterrupt
 
     @event_handler(ManageService.name, name + "close_one_event", handler_type=BROADCAST, reliable_delivery=False)
     def close_one_event_handler(self, payload):
+        """
+        这里使用redis的分布式锁来进行单一服务实例的关闭，
+        哪个实例抢到了redis分布式锁则执行关闭动作，没有抢到锁的继续运行。
+
+        可能你会觉得，为什么不直接声明一个rpc式的调用，接收到rpc调用的实例直接停止自身不就好了，
+        但是在没有AI微服务实例正在运行的场景下，调用方进行rpc调用会被阻塞，此后如果有实例被新拉起，则实例会立刻接收到该rpc调用而被停止服务。
+        这涉及到nameko和rabbitmq的底层原理，我猜测是rpc的调用消息滞留在了消息队列中，导致新的实例启动后立刻拉到这个rpc消息而执行相应的调用。
+        """
         LOGGER.info("receive close one event")
         close_unique_id = payload
         LOGGER.info(f"close_unique_id = {close_unique_id}")
         lock_ok = self.redis_storage.client.set(close_unique_id, "locked", ex=timedelta(minutes=1), nx=True)
         if lock_ok:
-            LOGGER.info("get close lock, raise KeyboardInterrupt...")
-            raise KeyboardInterrupt
+            return self.close_event_handler()
         else:
             LOGGER.info("close lock failed, continue running...")
 
     @event_handler(ManageService.name, name + "state_change", handler_type=BROADCAST, reliable_delivery=False)
     def state_to_ready_handler(self, payload):
+        """
+        在异步调用的场景下，需要在任务计算结束后通知AI微服务实例更新自己的服务状态，以便接收后续的调用
+        """
         if self.unique_id == payload:
             self.state_lock.acquire()
             self.service_info.state = ServiceReadyState
@@ -84,6 +99,9 @@ class AIBaseService(ABC):
 
     @rpc
     def call(self, args: dict):
+        """
+        核心函数，同时也是模板方法模式的核心模板，定义了标准的调用流程和参数处理方法。
+        """
         self.state_lock.acquire()
         supportInput = SupportInput().from_dict(args['supportInput'])
         self.support_input = supportInput
@@ -125,7 +143,7 @@ class AIBaseService(ABC):
 
     def handle_single_image(self, img_url) -> dict:
         """
-        return type like this:
+        single_image的返回值示例如下，字典中的值需要是一个列表，否则在merge_single_result函数执行时会报错。
 
         return {
             'frames': [],
@@ -139,6 +157,8 @@ class AIBaseService(ABC):
         try:
             os.makedirs(output_path, exist_ok=True)
             LOGGER.info(f"Folder '{output_path}' created successfully.")
+            # 这里使用【self】.single_image_cpp_call来进行函数调用而不是AIBaseService.single_image_cpp_call
+            # 目的是为了将函数调用动态分派，调用子类的实现函数。下同。
             return self.single_image_cpp_call(img_path, output_path, self.hyperparameters)
         finally:
             clear_image_temp_resource(img_path, output_path)
@@ -158,6 +178,7 @@ class AIBaseService(ABC):
         output_video_path = f"temp/output_{video_name}"
         output_jsonl_path = f"temp/output_{task_id}.jsonl"
 
+        # 这里为什么使用多进程进行调用，是因为多线程情况下，cpp侧在计算的时候不会让出cpu，导致服务无法接收其他请求（如服务信息上报事件响应等）
         multiprocessing.Process(target=self.video_cpp_call, daemon=True,
                                 args=[video_path, output_video_path, output_jsonl_path, video_progress_key,
                                       self.hyperparameters, task_id, self.unique_id]).start()
@@ -217,6 +238,10 @@ class AIBaseService(ABC):
 
     @staticmethod
     def after_video_call(video_output_path, video_output_json_path, task_id, service_name, service_unique_id):
+        """
+        由于多进程进行传参时，无法将rpc对象以及redis client对象进行传递，所以只能重新创建对象来进行服务调用。
+        如果你有更好的方法，可以将其改进。
+        """
         with ClusterRpcProxy(config.get_rpc_config()) as cluster_rpc:
             video_url = cluster_rpc.object_storage_service.upload_object(video_output_path)
             json_url = cluster_rpc.object_storage_service.upload_object(video_output_json_path)

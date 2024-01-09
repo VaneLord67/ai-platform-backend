@@ -1,10 +1,7 @@
 import uuid
-from typing import List, Union
-
-import redis
+from typing import List
 
 from ais import app_yolo
-from common.config import config
 from model.box import Box
 from model.hyperparameter import Hyperparameter
 
@@ -54,8 +51,11 @@ class YoloArg:
 
 
 def call_yolo(yoloArg: YoloArg):
+    """
+    这里用arg对象来构造命令行参数字符串
+    """
     args = []
-    args.append("app_yolo")
+    args.append("app_yolo")  # 命令行参数的第一个位置为程序名，所以需要先添加一个字符串，写什么都行，不写的话cpp中命令行解析会出错
     args.append("--model=E:/GraduationDesign/yolov8n.trt")
     args.append(f"--size={yoloArg.size}")
     args.append(f"--batch_size={yoloArg.batch_size}")
@@ -84,8 +84,9 @@ def call_yolo(yoloArg: YoloArg):
     if yoloArg.video_progress_key:
         args.append(f"--videoProgressKey={yoloArg.video_progress_key}")
     print(f"args = {args}")
-    cppFrames = app_yolo.main_func_wrapper(args)
+    cppFrames = app_yolo.main_func_wrapper(args)  # 调用cpp
     frames = []
+    # 将cpp对象转为python对象
     for cppFrame in cppFrames:
         boxes = []
         for cppBox in cppFrame:
