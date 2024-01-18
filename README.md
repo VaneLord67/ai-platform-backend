@@ -32,16 +32,26 @@ paho-mqtt
 安装好Docker后，按下面的步骤运行起所需容器
 
 ## 1. MySQL
+```shell
 docker run -d --env=MYSQL_ROOT_PASSWORD=abc123 -p 3307:3306 mysql:latest
+```
 
 ## 2. RabbitMQ
-docker run -d --name rabbitmq -p 5672:5672 -p 15672:15672 rabbitmq:3.12-management
+```shell
+docker run -d --name ai-rabbitmq -p 1883:1883 -p 5672:5672 -p 15672:15672 rabbitmq:3.12-management
+# 开启mqtt协议支持：
+docker exec -it ai-rabbitmq rabbitmq-plugins enable rabbitmq_mqtt
+```
 
 ## 3. minio
+```shell
 docker run -d --name ai-minio -p 9000:9000 -p 9001:9001 -e MINIO_ROOT_USER="minio-root-user" -e MINIO_ROOT_PASSWORD="minio-root-password" bitnami/minio:latest
+```
 
 ## 4. redis
+```shell
 docker run -d --rm --name ai-redis -p 6379:6379 redis
+```
 
 ## python Flask启动
 ```cmd

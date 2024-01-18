@@ -10,6 +10,8 @@
   "jwt_secret": "ai-platform",
 
   "rabbitmq_url": "pyamqp://guest:guest@localhost",
+  "mqtt_host": "localhost",
+  "mqtt_port": 1883,
 
   "minio_url": "localhost:9000",
   "minio_access_key": "FujWoxJFDfBZJUkSKHkz",
