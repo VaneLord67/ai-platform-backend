@@ -4,7 +4,8 @@
 提供服务启停、服务发现、负载均衡、服务多实例等微服务基础功能， 并实现Web管理平台页面，
 包括微服务算法参数配置与测试模拟、任务请求/设备状况/流量可视化监控、一键启停控制、任务阻塞预警、硬件资源红线预警、报错前台提示等功能。
 
-# 依赖
+# build step
+## python依赖库
 ```text
 # 使用pip install安装以下库
 flask
@@ -20,34 +21,48 @@ minio
 psutil
 GPutil
 redis
+paho-mqtt
 ```
 
-# RabbitMQ
+## Docker安装
+[Ubuntu Docker安装文档](https://www.runoob.com/docker/ubuntu-docker-install.html)
+
+[Windows Docker安装文档](https://www.runoob.com/docker/windows-docker-install.html)
+
+安装好Docker后，按下面的步骤运行起所需容器
+
+## 1. MySQL
+docker run -d --env=MYSQL_ROOT_PASSWORD=abc123 -p 3307:3306 mysql:latest
+
+## 2. RabbitMQ
 docker run -d --name rabbitmq -p 5672:5672 -p 15672:15672 rabbitmq:3.12-management
 
-# minio
+## 3. minio
 docker run -d --name ai-minio -p 9000:9000 -p 9001:9001 -e MINIO_ROOT_USER="minio-root-user" -e MINIO_ROOT_PASSWORD="minio-root-password" bitnami/minio:latest
 
-# redis
+## 4. redis
 docker run -d --rm --name ai-redis -p 6379:6379 redis
 
-# cgi
+## python Flask启动
 ```cmd
 直接在项目根目录下运行cgi/main.py即可
+python cgi/main.py
 ```
 
-# microservice
+## 微服务启动
 ```cmd
+# 在项目根目录下
 nameko run microservice.manage:ManageService
+nameko run microservice.monitor:MonitorService
 nameko run microservice.object_storage:ObjectStorageService
+nameko run microservice.user:UserService
+
 nameko run microservice.detection:DetectionService
 nameko run microservice.track:TrackService
 nameko run microservice.recognition:RecognitionService
-nameko run microservice.user:UserService
-nameko run microservice.monitor:MonitorService
 ```
 
-# yolo
+# 附录
 附tensorRT-Alpha仓库中进行yolo调用的命令行参数：
 ```cmd
 # 推理图片
