@@ -1,10 +1,8 @@
 from typing import Union
 
+import redis
 from nameko.extensions import DependencyProvider
 
-import redis
-
-from common.config import config
 from common.util import create_redis_client
 
 
@@ -21,6 +19,9 @@ class RedisStorage(DependencyProvider):
 
     def setup(self):
         self.client: create_redis_client()
+
+    def stop(self):
+        self.client.close()
 
     def get_dependency(self, worker_ctx):
         return RedisStorageWrapper(self.client)

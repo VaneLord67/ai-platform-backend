@@ -121,6 +121,7 @@ nameko run microservice.manage:ManageService
 nameko run microservice.monitor:MonitorService
 nameko run microservice.object_storage:ObjectStorageService
 nameko run microservice.user:UserService
+nameko run microservice.mqtt_listener:MQTTListenerService
 
 nameko run microservice.detection:DetectionService
 nameko run microservice.track:TrackService

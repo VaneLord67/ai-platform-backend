@@ -1,3 +1,4 @@
+import json
 import multiprocessing
 import os
 import threading
@@ -15,6 +16,7 @@ from common import config
 from common.log import LOGGER
 from common.util import download_file, clear_image_temp_resource, create_redis_client
 from microservice.manage import ManageService
+from microservice.mqtt_storage import MQTTStorage
 from microservice.object_storage import ObjectStorageService
 from microservice.redis_storage import RedisStorage
 from model.hyperparameter import Hyperparameter
@@ -40,6 +42,7 @@ class AIBaseService(ABC):
     state_lock = threading.Lock()
 
     redis_storage = RedisStorage()
+    mqtt_storage = MQTTStorage()
 
     object_storage_service = RpcProxy(ObjectStorageService.name)
 
@@ -116,6 +119,7 @@ class AIBaseService(ABC):
                 img_url = self.support_input.value
                 result = self.handle_single_image(img_url)
                 output.update(result)
+                self.mqtt_storage.push_message(json.dumps(output))
                 return output
             elif supportInput.type == MULTIPLE_PICTURE_URL_TYPE:
                 img_urls = supportInput.value
@@ -252,5 +256,13 @@ class AIBaseService(ABC):
             }
             client.hset(name=task_id, mapping=mapping)
             client.expire(name=task_id, time=timedelta(hours=24))
+            mqtt_storage = MQTTStorage()
+            msg = {
+                'task_id': task_id,
+                'video_url': video_url,
+                'json_url': json_url,
+            }
+            mqtt_storage.push_message(json.dumps(msg))
+            mqtt_storage.client.loop_write()
             cluster_rpc.manage_service.change_state_to_ready(service_name, service_unique_id)
             LOGGER.info(f"video task done, task_id:{task_id}")

@@ -8,6 +8,7 @@ from flask_socketio import Namespace
 from cgi.singleton import rpc
 from common.log import LOGGER
 from common.util import get_log_from_redis, create_redis_client
+from microservice.mqtt_storage import MQTTStorage
 from model.support_input import VIDEO_URL_TYPE, CAMERA_TYPE
 
 
@@ -29,6 +30,7 @@ class DynamicNamespace(Namespace):
         self.log_key = unique_id + "_log"
         self.video_progress_key: str = unique_id + "_video_progress"
         self.redis_client = create_redis_client()
+        self.mqtt_storage = MQTTStorage()
 
     def set_json_data(self, json_data):
         if self.source == CAMERA_TYPE:

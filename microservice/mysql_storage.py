@@ -17,7 +17,6 @@ class MysqlStorage(DependencyProvider):
 
     def __init__(self):
         self.pool: Union[None, PooledDB] = None
-        self.conn: Union[None, PooledSharedDBConnection, PooledDedicatedDBConnection] = None
 
     def setup(self):
         pool = PooledDB(MySQLdb,
@@ -29,7 +28,9 @@ class MysqlStorage(DependencyProvider):
                         )
         self.pool = pool
 
+    def stop(self):
+        if self.pool:
+            self.pool.close()
+
     def get_dependency(self, worker_ctx):
-        conn = self.pool.connection()
-        conn.cursor()
         return MysqlStorageWrapper(self.pool.connection())
