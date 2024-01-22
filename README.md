@@ -82,6 +82,8 @@ ${tensorRT安装目录}/bin/trtexec --onnx=${YoloV8 onnx路径}  --saveEngine=${
 [cpp_redis安装文档](https://github.com/cpp-redis/cpp_redis/wiki/Installation)
 
 ### cpp_ai_utils
+[cpp_ai_utils github地址](https://github.com/VaneLord67/cpp_ai_utils)
+
 这是c++项目中一些公共能力的封装，提供了redis连接、jsonl文件结果写入等。
 
 将上面编译好的cpp_redis的lib目录、头文件目录配置好，编译cpp_ai_utils产生静态lib库。
@@ -90,11 +92,15 @@ ${tensorRT安装目录}/bin/trtexec --onnx=${YoloV8 onnx路径}  --saveEngine=${
 
 [yolov8n-cls.onnx下载地址](https://docs.ultralytics.com/zh/tasks/classify/#_2)
 
+[app_yolo_cls github地址](https://github.com/VaneLord67/yolov8-cls-OpenCV)
+
 修改app_yolo_cls中的modelPath，依赖cpp_ai_utils的lib，
 编译产生Python模块文件app_yolo_cls，在linux平台下后缀名为.so，在win平台下后缀名为.pyd
 
 将app_yolo_cls放在ai-platform-backend/ais文件夹下
 ### app_yolo
+[app_yolo github地址](https://github.com/VaneLord67/ai-platform-yolov8)
+
 修改app_yolo中的modelPath为TensorRT模型转化步骤中产生的trt文件路径。
 
 依赖cpp_ai_utils的lib，编译产生Python模块文件app_yolo，在linux平台下后缀名为.so，在win平台下后缀名为.pyd
