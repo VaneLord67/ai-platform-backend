@@ -79,8 +79,9 @@ def delete_user():
 @register_route(url_prefix + '/permission', "获取权限列表", "GET")
 def get_permissions():
     permissions = []
-    for route, other in permission_map.items():
-        permissions.append(Permission(route=route, act=other['method'], description=other['description']))
+    for path, methods in permission_map.items():
+        for method, other in methods.items():
+            permissions.append(Permission(route=path, act=method, description=other['description']))
     return APIResponse.success_with_data(permissions).flask_response()
 
 
@@ -92,7 +93,7 @@ def get_role_permissions():
     permissions = []
     for casbin_permission in casbin_permissions:
         if casbin_permission[1] in permission_map:
-            description = permission_map[casbin_permission[1]]['description']
+            description = permission_map[casbin_permission[1]][casbin_permission[2]]['description']
             permissions.append(Permission(role=casbin_permission[0], route=casbin_permission[1],
                                           act=casbin_permission[2], description=description))
     return APIResponse.success_with_data(permissions).flask_response()

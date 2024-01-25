@@ -18,7 +18,7 @@ class RedisStorage(DependencyProvider):
         self.client: Union[redis.StrictRedis, None] = None
 
     def setup(self):
-        self.client: create_redis_client()
+        self.client = create_redis_client()
 
     def stop(self):
         self.client.close()

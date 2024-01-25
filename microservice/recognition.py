@@ -1,7 +1,7 @@
 from nameko.events import event_handler, BROADCAST
 
 from ais.yolo_cls import YoloClsArg, call_cls_yolo
-from common.util import get_log_from_redis, clear_video_temp_resource, create_redis_client
+from common.util import get_log_from_redis, clear_video_temp_resource, create_redis_client, clear_camera_temp_resource
 from microservice.ai_base import AIBaseService
 from model.ai_model import AIModel
 from model.service_info import ServiceInfo
@@ -43,11 +43,19 @@ class RecognitionService(AIBaseService):
         super().state_to_ready_handler(payload)
 
     @staticmethod
-    def camera_cpp_call(camera_id, hyperparameters, stop_signal_key, camera_data_queue_name, log_key):
-        arg = YoloClsArg(camera_id=camera_id,
-                         stop_signal_key=stop_signal_key, queue_name=camera_data_queue_name,
-                         hyperparameters=hyperparameters, log_key=log_key)
-        call_cls_yolo(arg)
+    def camera_cpp_call(camera_id, hyperparameters, stop_signal_key,
+                        camera_data_queue_name, log_key, task_id, service_unique_id,
+                        camera_output_path, camera_output_json_path):
+        try:
+            arg = YoloClsArg(camera_id=camera_id,
+                             stop_signal_key=stop_signal_key, queue_name=camera_data_queue_name,
+                             hyperparameters=hyperparameters, log_key=log_key)
+            call_cls_yolo(arg)
+            AIBaseService.after_camera_call(camera_output_path, camera_output_json_path,
+                                            task_id, RecognitionService.name, service_unique_id)
+        finally:
+            clear_camera_temp_resource(camera_output_path, camera_output_json_path)
+
 
     @staticmethod
     def single_image_cpp_call(img_path, output_path, hyperparameters):

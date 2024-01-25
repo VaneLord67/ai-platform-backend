@@ -3,7 +3,8 @@ from nameko.standalone.rpc import ClusterRpcProxy
 
 from ais.yolo import YoloArg, call_yolo
 from common import config
-from common.util import find_any_file, get_log_from_redis, clear_video_temp_resource, create_redis_client
+from common.util import find_any_file, get_log_from_redis, clear_video_temp_resource, create_redis_client, \
+    clear_camera_temp_resource
 from microservice.ai_base import AIBaseService
 from microservice.manage import ManageService
 from model.ai_model import AIModel
@@ -57,15 +58,24 @@ class DetectionService(AIBaseService):
         super().state_to_ready_handler(payload)
 
     @staticmethod
-    def camera_cpp_call(camera_id, hyperparameters, stop_signal_key, camera_data_queue_name, log_key):
-        yolo_arg = YoloArg(camera_id=camera_id,
-                           stop_signal_key=stop_signal_key,
-                           queue_name=camera_data_queue_name,
-                           is_show=True,
-                           save_path=None,
-                           hyperparameters=hyperparameters,
-                           log_key=log_key)
-        call_yolo(yolo_arg)
+    def camera_cpp_call(camera_id, hyperparameters, stop_signal_key,
+                        camera_data_queue_name, log_key, task_id, service_unique_id,
+                        camera_output_path, camera_output_json_path):
+        try:
+            yolo_arg = YoloArg(camera_id=camera_id,
+                               stop_signal_key=stop_signal_key,
+                               queue_name=camera_data_queue_name,
+                               video_output_path=camera_output_path,
+                               video_output_json_path=camera_output_json_path,
+                               is_show=True,
+                               save_path=None,
+                               hyperparameters=hyperparameters,
+                               log_key=log_key)
+            call_yolo(yolo_arg)
+            AIBaseService.after_camera_call(camera_output_path, camera_output_json_path,
+                                            task_id, DetectionService.name, service_unique_id)
+        finally:
+            clear_camera_temp_resource(camera_output_path, camera_output_json_path)
 
     @staticmethod
     def video_cpp_call(video_path, video_output_path, video_output_json_path, video_progress_key,

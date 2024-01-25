@@ -199,25 +199,24 @@ def get_filename_and_ext(file_path):
     return file_name, file_extension
 
 
+def remove_file(path):
+    if os.path.exists(path):
+        try:
+            os.remove(path)
+            LOGGER.info(f'File {path} deleted successfully.')
+        except OSError as e:
+            LOGGER.info(f'Error deleting file {path}: {e}')
+
+
 def clear_video_temp_resource(video_path, output_video_path, output_json_path):
-    if os.path.exists(video_path):
-        try:
-            os.remove(video_path)
-            LOGGER.info(f'File {video_path} deleted successfully.')
-        except OSError as e:
-            LOGGER.info(f'Error deleting file {video_path}: {e}')
-    if os.path.exists(output_video_path):
-        try:
-            os.remove(output_video_path)
-            LOGGER.info(f'File {output_video_path} deleted successfully.')
-        except OSError as e:
-            LOGGER.info(f'Error deleting file {output_video_path}: {e}')
-    if os.path.exists(output_json_path):
-        try:
-            os.remove(output_json_path)
-            LOGGER.info(f'File {output_json_path} deleted successfully.')
-        except OSError as e:
-            LOGGER.info(f'Error deleting file {output_json_path}: {e}')
+    remove_file(video_path)
+    remove_file(output_video_path)
+    remove_file(output_json_path)
+
+
+def clear_camera_temp_resource(camera_output_path, camera_output_json_path):
+    remove_file(camera_output_path)
+    remove_file(camera_output_json_path)
 
 
 def clear_image_temp_resource(img_path, output_path):

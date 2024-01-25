@@ -119,7 +119,9 @@ class AIBaseService(ABC):
                 img_url = self.support_input.value
                 result = self.handle_single_image(img_url)
                 output.update(result)
-                self.mqtt_storage.push_message(json.dumps(output))
+                self.mqtt_storage.push_message(
+                    json.dumps(output, default=lambda o: o.__json__() if hasattr(o, '__json__') else o.__dict__)
+                )
                 return output
             elif supportInput.type == MULTIPLE_PICTURE_URL_TYPE:
                 img_urls = supportInput.value
@@ -128,6 +130,9 @@ class AIBaseService(ABC):
                     result = self.handle_single_image(img_url)
                     AIBaseService.merge_single_result(merged_result, result)
                 output.update(merged_result)
+                self.mqtt_storage.push_message(
+                    json.dumps(output, default=lambda o: o.__json__() if hasattr(o, '__json__') else o.__dict__)
+                )
                 return output
             elif supportInput.type == VIDEO_URL_TYPE:
                 self.handle_video()
@@ -197,13 +202,22 @@ class AIBaseService(ABC):
         stop_signal_key = self.args['stopSignalKey']
         camera_data_queue_name = self.args['queueName']
         log_key = self.args['logKey']
+
+        if 'taskId' not in self.args:
+            raise ValueError("task id not found!")
+        task_id = self.args['taskId']
+        output_video_path = f"temp/output_{task_id}_{camera_id}.mp4"
+        output_jsonl_path = f"temp/output_{task_id}.jsonl"
+
         multiprocessing.Process(target=self.camera_cpp_call, daemon=True,
                                 args=[camera_id, self.hyperparameters, stop_signal_key,
-                                      camera_data_queue_name, log_key]).start()
+                                      camera_data_queue_name, log_key, task_id, self.unique_id,
+                                      output_video_path, output_jsonl_path]).start()
 
     @staticmethod
     def camera_cpp_call(camera_id, hyperparameters, stop_signal_key,
-                        camera_data_queue_name, log_key):
+                        camera_data_queue_name, log_key, task_id, service_unique_id,
+                        camera_output_path, camera_output_json_path):
         raise NotImplementedError("please implement camera_cpp_call")
 
     def call_init(self):
@@ -257,6 +271,7 @@ class AIBaseService(ABC):
             client.hset(name=task_id, mapping=mapping)
             client.expire(name=task_id, time=timedelta(hours=24))
             mqtt_storage = MQTTStorage()
+            mqtt_storage.setup()
             msg = {
                 'task_id': task_id,
                 'video_url': video_url,
@@ -266,3 +281,22 @@ class AIBaseService(ABC):
             mqtt_storage.client.loop_write()
             cluster_rpc.manage_service.change_state_to_ready(service_name, service_unique_id)
             LOGGER.info(f"video task done, task_id:{task_id}")
+
+    @staticmethod
+    def after_camera_call(camera_output_path, camera_output_json_path, task_id, service_name, service_unique_id):
+        with ClusterRpcProxy(config.get_rpc_config()) as cluster_rpc:
+            video_url = cluster_rpc.object_storage_service.upload_object(camera_output_path)
+            json_url = cluster_rpc.object_storage_service.upload_object(camera_output_json_path)
+
+            mqtt_storage = MQTTStorage()
+            mqtt_storage.setup()
+            msg = {
+                'task_id': task_id,
+                'video_url': video_url,
+                'json_url': json_url,
+            }
+            LOGGER.info(f"msg = {msg}")
+            mqtt_storage.push_message(json.dumps(msg))
+            mqtt_storage.client.loop(timeout=1)
+            cluster_rpc.manage_service.change_state_to_ready(service_name, service_unique_id)
+            LOGGER.info(f"camera task done, task_id:{task_id}")
