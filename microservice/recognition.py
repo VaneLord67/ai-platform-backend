@@ -49,6 +49,7 @@ class RecognitionService(AIBaseService):
         try:
             arg = YoloClsArg(camera_id=camera_id,
                              stop_signal_key=stop_signal_key, queue_name=camera_data_queue_name,
+                             video_output_path=camera_output_path, video_output_json_path=camera_output_json_path,
                              hyperparameters=hyperparameters, log_key=log_key)
             call_cls_yolo(arg)
             AIBaseService.after_camera_call(camera_output_path, camera_output_json_path,

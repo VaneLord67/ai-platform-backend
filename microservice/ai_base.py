@@ -278,7 +278,7 @@ class AIBaseService(ABC):
                 'json_url': json_url,
             }
             mqtt_storage.push_message(json.dumps(msg))
-            mqtt_storage.client.loop_write()
+            mqtt_storage.client.loop(timeout=1)
             cluster_rpc.manage_service.change_state_to_ready(service_name, service_unique_id)
             LOGGER.info(f"video task done, task_id:{task_id}")
 

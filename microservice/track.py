@@ -80,6 +80,6 @@ class TrackService(AIBaseService):
                           )
             call_yolo(arg)
             AIBaseService.after_video_call(video_output_path, video_output_json_path,
-                             task_id, TrackService.name, service_unique_id)
+                                           task_id, TrackService.name, service_unique_id)
         finally:
             clear_video_temp_resource(video_path, video_output_path, video_output_json_path)
