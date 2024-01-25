@@ -71,22 +71,65 @@ ${tensorRT安装目录}/bin/trtexec --onnx=${YoloV8 onnx路径}  --saveEngine=${
 
 
 ## C++ OpenCV安装
-安装4.8.0版本的openCV
+编译4.8.0版本的openCV
 
 [C++ OpenCV Release](https://opencv.org/releases/)
 
+```shell
+git clone git@github.com:opencv/opencv.git
+cd opencv
+mkdir build && cd build
+cmake .. -D BUILD_opencv_world=ON
+make
+# make后在build/lib目录下查看是否生成了libopencv_world.so.4.8.0
+```
+
+## Pybind安装
+[Pybind install](https://pybind11.readthedocs.io/en/stable/installing.html)
+
 ## 编译C++项目产生Python模块文件
 ### cpp_redis
-这是手动编译cpp_redis的方法，如果你熟悉cmake的话，可以在下面的cpp_ai_utils项目中编写cmake将cpp_redis作为子项目。
-
 [cpp_redis安装文档](https://github.com/cpp-redis/cpp_redis/wiki/Installation)
+
+```shell
+git clone git@github.com:Cylix/cpp_redis.git
+cd cpp_redis
+mkdir build && cd build
+cmake ..
+make
+```
+
+```shell
+# 如果在cmake环节出现字样：
+# CMake Error: install(EXPORT "cpp_redis" ...) includes target "cpp_redis" which requires target "tacopie" that is not in any export set.
+# 则在cpp_redis目录执行以下命令后再cmake
+cd tacopie
+git fetch origin pull/5/head:cmake-fixes
+git checkout cmake-fixes
+cd ..
+```
+
+### spdlog
+[spdlog安装](https://github.com/gabime/spdlog)
+
+git clone下载其头文件库即可，留待后续使用。
 
 ### cpp_ai_utils
 [cpp_ai_utils github地址](https://github.com/VaneLord67/cpp_ai_utils)
 
 这是c++项目中一些公共能力的封装，提供了redis连接、jsonl文件结果写入等。
 
-将上面编译好的cpp_redis的lib目录、头文件目录配置好，编译cpp_ai_utils产生静态lib库。
+依赖项目有OpenCV、cpp_redis、spdlog，编译cpp_ai_utils产生libcpp_ai_utils.a。
+
+```shell
+git clone git@github.com:VaneLord67/cpp_ai_utils.git
+cd cpp_ai_utils/cpp_ai_utils
+mkdir build && cd build
+# 需要修改CMakeLists.txt中的头文件路径、库路径、动态链接库名
+cmake ..
+make
+```
+
 ### app_yolo_cls
 下载cls onnx放到app_yolo_cls项目下
 
@@ -94,23 +137,35 @@ ${tensorRT安装目录}/bin/trtexec --onnx=${YoloV8 onnx路径}  --saveEngine=${
 
 [app_yolo_cls github地址](https://github.com/VaneLord67/yolov8-cls-OpenCV)
 
-修改app_yolo_cls中的modelPath，依赖cpp_ai_utils的lib，
+修改app_yolo_cls中的modelPath，依赖项目是cpp_ai_utils，
 编译产生Python模块文件app_yolo_cls，在linux平台下后缀名为.so，在win平台下后缀名为.pyd
 
 将app_yolo_cls放在ai-platform-backend/ais文件夹下
+
+### Eigen3.3.9
+
+[gitlab地址](https://gitlab.com/libeigen/eigen/-/releases/3.3.9)
+
+### ByteTrack-cpp
+
+[github地址](https://github.com/Vertical-Beach/ByteTrack-cpp)
+
+依赖Eigen3.3.9
+
 ### app_yolo
 [app_yolo github地址](https://github.com/VaneLord67/ai-platform-yolov8)
 
 修改app_yolo中的modelPath为TensorRT模型转化步骤中产生的trt文件路径。
 
-依赖cpp_ai_utils的lib，编译产生Python模块文件app_yolo，在linux平台下后缀名为.so，在win平台下后缀名为.pyd
+依赖OpenCV、TensorRT、CUDA、pybind、cpp_ai_utils、ByteTrack，
+编译产生Python模块文件app_yolo，在linux平台下后缀名为.so，在win平台下后缀名为.pyd
 
 将app_yolo放在ai-platform-backend/ais文件夹下
 ### 其他c++运行时动态库依赖
 我个人开发用的win平台上：cudart64_110.dll、nvinfer.dll、opencv_world480.dll、openh264-1.8.0-win64.dll
 
 linux平台下，cudart64可以在CUDA安装文件夹的bin目录下找到，nvinfer可以在tensorRT安装目录lib下找到，
-opencv可以在opencv安装目录的bind目录下找到，
+opencv在编译后build/lib目录下找到
 openh264-1.8.0下载地址：https://github.com/cisco/openh264/releases/tag/v1.8.0
 
 将这些动态库放到ai-platform-backend/ais文件夹下
