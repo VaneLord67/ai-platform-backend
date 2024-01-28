@@ -137,20 +137,35 @@ make
 
 [app_yolo_cls github地址](https://github.com/VaneLord67/yolov8-cls-OpenCV)
 
-修改app_yolo_cls中的modelPath，依赖项目是cpp_ai_utils，
-编译产生Python模块文件app_yolo_cls，在linux平台下后缀名为.so，在win平台下后缀名为.pyd
+修改app_yolo_cls中的modelPath
+编译产生Python模块文件libapp_yolo_cls.so
 
-将app_yolo_cls放在ai-platform-backend/ais文件夹下
+```shell
+git clone git@github.com:VaneLord67/ai-platform-yolov8-cls-OpenCV.git
+cd ai-platform-yolov8-cls-OpenCV
+mkdir build && cd build
+# 修改cmake中的头文件路径、库路径
+cmake ..
+make
+```
+
+将libapp_yolo_cls.so放在ai-platform-backend/ais文件夹下
 
 ### Eigen3.3.9
 
 [gitlab地址](https://gitlab.com/libeigen/eigen/-/releases/3.3.9)
 
+仅头文件库，git clone后留待后续使用
+
 ### ByteTrack-cpp
 
 [github地址](https://github.com/Vertical-Beach/ByteTrack-cpp)
 
-依赖Eigen3.3.9
+```shell
+# 依赖Eigen3.3.9
+# 将这一行的SHARED改为STATIC，使用Cmake编译
+add_library(${PROJECT_NAME} SHARED
+```
 
 ### app_yolo
 [app_yolo github地址](https://github.com/VaneLord67/ai-platform-yolov8)
@@ -158,14 +173,14 @@ make
 修改app_yolo中的modelPath为TensorRT模型转化步骤中产生的trt文件路径。
 
 依赖OpenCV、TensorRT、CUDA、pybind、cpp_ai_utils、ByteTrack，
-编译产生Python模块文件app_yolo，在linux平台下后缀名为.so，在win平台下后缀名为.pyd
+编译产生Python模块文件libapp_yolo.so
 
-将app_yolo放在ai-platform-backend/ais文件夹下
+将libapp_yolo.so放在ai-platform-backend/ais文件夹下
 ### 其他c++运行时动态库依赖
 我个人开发用的win平台上：cudart64_110.dll、nvinfer.dll、opencv_world480.dll、openh264-1.8.0-win64.dll
 
 linux平台下，cudart64可以在CUDA安装文件夹的bin目录下找到，nvinfer可以在tensorRT安装目录lib下找到，
-opencv在编译后build/lib目录下找到
+libopencv_world.so在编译后build/lib目录下找到
 openh264-1.8.0下载地址：https://github.com/cisco/openh264/releases/tag/v1.8.0
 
 将这些动态库放到ai-platform-backend/ais文件夹下
@@ -187,13 +202,4 @@ nameko run microservice.mqtt_listener:MQTTListenerService
 nameko run microservice.detection:DetectionService
 nameko run microservice.track:TrackService
 nameko run microservice.recognition:RecognitionService
-```
-
-# 附录
-附tensorRT-Alpha仓库中进行yolo调用的命令行参数：
-```cmd
-# 推理图片
---model=E:/GraduationDesign/yolov8n.trt --size=640 --batch_size=1  --img=E:/GraduationDesign/tensorrt-alpha/data/6406402.jpg --show --savePath=E:\GraduationDesign\tensorOutput
-# 推理视频
---model=E:/GraduationDesign/yolov8n.trt --size=640 --batch_size=8  --video=E:/GraduationDesign/tensorrt-alpha/data/people.mp4 --show --savePath=E:\GraduationDesign\tensorOutput
 ```
