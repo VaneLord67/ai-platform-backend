@@ -1,8 +1,6 @@
-import os
 import sys
+
 import cv2
-import time
-import traceback
 
 sys.path.append("/home/hx/Yolov8-source/lib")
 
@@ -64,7 +62,7 @@ def inference(image):
         input_images.append(image)
     results = yolov8_detector.inference(input_images)
 
-    return results
+    return results, input_images
 
 
 def parse_results(results):
@@ -81,7 +79,7 @@ def parse_results(results):
     return parsed
 
 
-def draw_results(input_images, results, save_path):
+def draw_results(input_images, results, save_path=None):
     # 获取输出结果
     for i, frame_result in enumerate(results):
         # print("[DETECT INFO] Frame{} results: {} objections".format(i, len(frame_result)))
@@ -97,12 +95,14 @@ def draw_results(input_images, results, save_path):
             label_text = f"cls{int(rect.label)} conf{rect.score:.2f}"
             cv2.putText(input_images[i], label_text, (int(xmin), int(ymin) - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5,
                         (0, 255, 0), 2)
-        # 'results/frame_' + str(i) + '_results.jpg'
-        cv2.imwrite(save_path, input_images[i])
+        if save_path:
+            # 'results/frame_' + str(i) + '_results.jpg'
+            cv2.imwrite(save_path, input_images[i])
 
 
 if __name__ == '__main__':
     image = cv2.imread('/home/hx/Yolov8-source/data/image/bus.jpg')
-    results = inference(image)
-    parsed = parse_results(results)
-    print(parsed)
+    results, input_images = inference(image)
+    frames = parse_results(results)
+    print(frames)
+    draw_results(input_images, results, save_path='test.jpg')
