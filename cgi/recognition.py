@@ -2,7 +2,6 @@ from flask import request, Blueprint
 
 from common.api_response import APIResponse
 from common.error_code import ErrorCodeEnum
-from microservice.recognition import RecognitionService
 from model.cls_result import ClsResult
 from .ai_common import recall, async_call, if_async_call_type, default_busy_check_function
 from .singleton import rpc, register_route
@@ -23,7 +22,7 @@ def call():
     if if_async_call_type(json_data):
         source, namespace, unique_id = DynamicNamespace.init_parameter(json_data)
         dynamicNamespace = DynamicNamespace(namespace, unique_id,
-                                            service_name=RecognitionService.name,
+                                            service_name="recognition_service",
                                             source=source)
         json_data = dynamicNamespace.set_json_data(json_data)
         return async_call(call_function, default_busy_check_function, json_data, namespace, dynamicNamespace)

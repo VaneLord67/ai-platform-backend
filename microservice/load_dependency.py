@@ -21,7 +21,7 @@ class LoadDependency(DependencyProvider):
         gpu_percent = [gpu.load for gpu in gpus]
         load = {
             'hostname': socket.gethostname(),
-            "cpu_percent": psutil.cpu_percent(interval=1) / 100,
+            "cpu_percent": psutil.cpu_percent(interval=1),
             "memory_percent": psutil.virtual_memory().percent,
             "gpu_percent": gpu_percent
         }

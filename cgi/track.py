@@ -1,10 +1,7 @@
 from flask import request, Blueprint
 
-from flask import request, Blueprint
-
 from common.api_response import APIResponse
 from common.error_code import ErrorCodeEnum
-from microservice.track import TrackService
 from model.box import Box
 from .ai_common import async_call, recall, if_async_call_type, default_busy_check_function
 from .singleton import rpc, register_route
@@ -25,7 +22,7 @@ def call():
     if if_async_call_type(json_data):
         source, namespace, unique_id = DynamicNamespace.init_parameter(json_data)
         dynamicNamespace = DynamicNamespace(namespace, unique_id,
-                                            service_name=TrackService.name,
+                                            service_name="track_service",
                                             source=source,
                                             )
         json_data = dynamicNamespace.set_json_data(json_data)

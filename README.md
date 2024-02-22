@@ -14,14 +14,16 @@ flask_nameko
 Flask-SocketIO
 DBUtils
 mysqlclient
+mysql-connector-python
 casbin
 nameko
-opencv
+opencv-python
 minio
 psutil
 GPutil
 redis
 paho-mqtt
+PyJWT
 ```
 
 ## Docker安装
@@ -33,12 +35,12 @@ paho-mqtt
 
 ### 1. MySQL
 ```shell
-docker run -d --env=MYSQL_ROOT_PASSWORD=abc123 -p 3307:3306 mysql:latest
+docker run -d --name ai-mysql --env=MYSQL_ROOT_PASSWORD=abc123 -p 3307:3306 mysql:latest
 ```
 
 ### 2. RabbitMQ
 ```shell
-docker run -d --name ai-rabbitmq -p 1883:1883 -p 5672:5672 -p 15672:15672 rabbitmq:3.12-management
+docker run --privileged -d --name ai-rabbitmq -p 1883:1883 -p 5672:5672 -p 15672:15672 rabbitmq:3.12-management
 # 开启mqtt协议支持：
 docker exec -it ai-rabbitmq rabbitmq-plugins enable rabbitmq_mqtt
 ```
@@ -187,19 +189,23 @@ openh264-1.8.0下载地址：https://github.com/cisco/openh264/releases/tag/v1.8
 ## python Flask启动
 ```cmd
 直接在项目根目录下运行cgi/main.py即可
+export PYTHONPATH=${代码根目录路径}
 python cgi/main.py
 ```
 
 ## 微服务启动
 ```cmd
 # 在项目根目录下
-nameko run microservice.manage:ManageService
-nameko run microservice.monitor:MonitorService
-nameko run microservice.object_storage:ObjectStorageService
-nameko run microservice.user:UserService
-nameko run microservice.mqtt_listener:MQTTListenerService
+cd ~/ai-platform/ai-platform-backend
+conda activate ai-platform
 
-nameko run microservice.detection:DetectionService
-nameko run microservice.track:TrackService
-nameko run microservice.recognition:RecognitionService
+nameko run --config nameko_config.yaml microservice.manage:ManageService
+nameko run --config nameko_config.yaml microservice.monitor:MonitorService
+nameko run --config nameko_config.yaml microservice.object_storage:ObjectStorageService
+nameko run --config nameko_config.yaml microservice.user:UserService
+nameko run --config nameko_config.yaml microservice.mqtt_listener:MQTTListenerService
+
+nameko run --config nameko_config.yaml microservice.detection:DetectionService
+nameko run --config nameko_config.yaml microservice.track:TrackService
+nameko run --config nameko_config.yaml microservice.recognition:RecognitionService
 ```
