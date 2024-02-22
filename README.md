@@ -7,23 +7,8 @@
 # build step
 ## python依赖库
 ```text
-# 使用pip install安装以下库
-flask
-flask-cors
-flask_nameko
-Flask-SocketIO
-DBUtils
-mysqlclient
-mysql-connector-python
-casbin
-nameko
-opencv-python
-minio
-psutil
-GPutil
-redis
-paho-mqtt
-PyJWT
+# 使用pip install安装库
+pip install flask flask-cors flask_nameko Flask-SocketIO DBUtils mysqlclient mysql-connector-python casbin nameko opencv-python minio psutil GPutil redis paho-mqtt PyJWT
 ```
 
 ## Docker安装
@@ -52,7 +37,7 @@ docker run -d --name ai-minio -p 9000:9000 -p 9001:9001 -e MINIO_ROOT_USER="mini
 
 ### 4. redis
 ```shell
-docker run -d --rm --name ai-redis -p 6379:6379 redis
+docker run --privileged -d --rm --name ai-redis -p 6379:6379 redis
 ```
 
 ## 驱动、CUDA、CUDNN安装
