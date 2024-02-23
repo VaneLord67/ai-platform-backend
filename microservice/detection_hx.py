@@ -5,15 +5,13 @@ import cv2
 from nameko.events import event_handler, BROADCAST
 from nameko.standalone.rpc import ClusterRpcProxy
 
-from ais.yolo import YoloArg, call_yolo
 from ais.yolo_hx import inference, parse_results, draw_results
 from common import config
-from common.util import find_any_file, get_log_from_redis, clear_video_temp_resource, create_redis_client, \
+from common.util import clear_video_temp_resource, create_redis_client, \
     clear_camera_temp_resource
 from microservice.ai_base import AIBaseService
 from microservice.manage import ManageService
 from model.ai_model import AIModel
-from model.hyperparameter import Hyperparameter
 from model.service_info import ServiceInfo
 from model.support_input import *
 
