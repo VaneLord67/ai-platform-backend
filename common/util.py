@@ -100,7 +100,7 @@ def generate_jwt(id: int, username: str) -> str:
     return token
 
 
-def decode_jwt(token: str) -> dict | None:
+def decode_jwt(token: str) -> Union[dict, None]:
     try:
         decoded_payload = jwt.decode(token, config.get("jwt_secret"), algorithms=['HS256'])
         return decoded_payload

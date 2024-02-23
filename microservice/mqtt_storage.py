@@ -4,6 +4,7 @@ import paho.mqtt.client as mqtt
 from nameko.extensions import DependencyProvider
 
 from common.config import config
+import sys
 
 
 class MQTTStorage(DependencyProvider):
@@ -15,7 +16,13 @@ class MQTTStorage(DependencyProvider):
     def setup(self):
         broker_address = config.config.get("mqtt_host")
         port = config.config.get("mqtt_port")
-        self.client = mqtt.Client()
+        if sys.version_info >= (3, 10):
+            # Python 3.10 或更高版本
+            self.client = mqtt.Client()
+        else:
+            # Python 3.8 或更低版本
+            from paho.mqtt.enums import CallbackAPIVersion
+            self.client = mqtt.Client(callback_api_version=CallbackAPIVersion.VERSION2)
         self.client.connect(broker_address, port)
 
     def stop(self):
