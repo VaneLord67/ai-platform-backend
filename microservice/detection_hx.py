@@ -133,7 +133,7 @@ class DetectionService(AIBaseService):
             fps = int(video_capture.get(cv2.CAP_PROP_FPS))
             current_frame_count = 0
 
-            out = cv2.VideoWriter(video_output_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (frame_width, frame_height))
+            out = cv2.VideoWriter(video_output_path, cv2.VideoWriter_fourcc(*'avc1'), fps, (frame_width, frame_height))
             redis_client = create_redis_client()
             redis_client.setex(name=video_progress_key, time=timedelta(days=1), value="0.00")
             with open(video_output_json_path, 'w') as f:

@@ -7,8 +7,9 @@
 # build step
 ## python依赖库
 ```text
-# 使用pip install安装库
-pip install flask flask-cors flask_nameko Flask-SocketIO DBUtils mysqlclient mysql-connector-python casbin nameko opencv-python minio psutil GPutil redis paho-mqtt PyJWT
+# 安装Python库
+pip install flask flask-cors flask_nameko Flask-SocketIO DBUtils mysqlclient mysql-connector-python casbin nameko minio psutil GPutil redis paho-mqtt PyJWT
+conda install -c conda-forge opencv
 ```
 
 ## Docker安装
