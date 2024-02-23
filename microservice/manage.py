@@ -67,9 +67,7 @@ class ManageService:
                              shell=True)
         elif plat == 'linux':
             subprocess.Popen(["nohup", "nameko", "run", '--config', 'nameko_config.yaml',
-                              f"microservice.{module_name}:{service_name.title().replace('_', '')}",
-                              '>', 'nameko_log', '&'],
-                             shell=True)
+                              f"microservice.{module_name}:{service_name.title().replace('_', '')}"])
         else:
             raise NotImplementedError(f"暂不支持{plat}平台")
 

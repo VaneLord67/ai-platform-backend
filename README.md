@@ -34,6 +34,8 @@ docker exec -it ai-rabbitmq rabbitmq-plugins enable rabbitmq_mqtt
 ### 3. minio
 ```shell
 docker run -d --name ai-minio -p 9000:9000 -p 9001:9001 -e MINIO_ROOT_USER="minio-root-user" -e MINIO_ROOT_PASSWORD="minio-root-password" bitnami/minio:latest
+创建好后到浏览器上localhost:9001上创建一个名为ai-platform的存储桶，登录用户名为minio-root-user，密码为minio-root-password
+并新建一个Access Key，将Access Key和Secret Key复制到config.json中
 ```
 
 ### 4. redis
