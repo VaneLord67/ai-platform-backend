@@ -92,7 +92,7 @@ def parsed_to_json(parsed):
             'score': score,
         }
         json_list.append(json_item)
-    return json_list
+    return [json_list]
 
 
 def draw_results(input_images, results, save_path=None):
