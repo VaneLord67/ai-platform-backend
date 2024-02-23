@@ -150,21 +150,19 @@ class DetectionService(AIBaseService):
                     # 对帧进行处理
                     results, input_images = inference(image)
 
-                    frames = parse_results(results)
+                    rects = parse_results(results)
                     json_items = []
-                    if len(frames) > 0:
-                        this_frame = frames[0]
-                        for rect in this_frame:
-                            xmin, ymin, w, h, label, score = rect
-                            json_item = {
-                                'xmin': xmin,
-                                'ymin': ymin,
-                                'w': w,
-                                'h': h,
-                                'label': label,
-                                'score': score,
-                            }
-                            json_items.append(json_item)
+                    for rect in rects:
+                        xmin, ymin, w, h, label, score = rect
+                        json_item = {
+                            'xmin': xmin,
+                            'ymin': ymin,
+                            'w': w,
+                            'h': h,
+                            'label': label,
+                            'score': score,
+                        }
+                        json_items.append(json_item)
                     f.write(json.dumps(json_items) + '\n')
                     draw_results(input_images, results, save_path=None)
                     if len(input_images) > 0:
