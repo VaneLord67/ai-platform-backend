@@ -57,6 +57,8 @@ class ManageService:
     def run_service(self, service_name):
         module_name = service_name.replace("_service", "")
         LOGGER.info(f"start a {module_name} instance...")
+        if module_name == 'detection':
+            module_name += '_hx'
         subprocess.Popen(["start", "nameko", "run",
                           f"microservice.{module_name}:{service_name.title().replace('_', '')}"],
                          shell=True)

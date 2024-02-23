@@ -82,8 +82,9 @@ make
 ```shell
 git clone git@github.com:Cylix/cpp_redis.git
 cd cpp_redis
+git submodule init && git submodule update
 mkdir build && cd build
-cmake ..
+cmake .. -DCMAKE_BUILD_TYPE=Release
 make
 ```
 
@@ -101,6 +102,10 @@ cd ..
 [spdlog安装](https://github.com/gabime/spdlog)
 
 git clone下载其头文件库即可，留待后续使用。
+
+```shell
+git clone git@github.com:gabime/spdlog.git
+```
 
 ### cpp_ai_utils
 [cpp_ai_utils github地址](https://github.com/VaneLord67/cpp_ai_utils)
@@ -144,6 +149,14 @@ make
 [gitlab地址](https://gitlab.com/libeigen/eigen/-/releases/3.3.9)
 
 仅头文件库，git clone后留待后续使用
+
+```shell
+git clone git@gitlab.com:libeigen/eigen.git
+git checkout 3.3.9
+mkdir build && cd build
+cmake ..
+make
+```
 
 ### ByteTrack-cpp
 
