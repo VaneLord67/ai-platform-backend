@@ -81,9 +81,12 @@ def parse_results(results):
 
 def parsed_to_json(parsed):
     json_list = []
+    print(f'parsed = {parsed}')
     for frame in parsed:
+        print(f'frame = {frame}')
         frame_list = []
         for rect in frame:
+            print(f'rect = {rect}')
             json_item = {
                 'xmin': rect.xmin,
                 'ymin': rect.ymin,
