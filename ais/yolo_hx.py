@@ -79,6 +79,24 @@ def parse_results(results):
     return parsed
 
 
+def parsed_to_json(parsed):
+    json_list = []
+    for frame in parsed:
+        frame_list = []
+        for rect in frame:
+            json_item = {
+                'xmin': rect.xmin,
+                'ymin': rect.ymin,
+                'w': rect.w,
+                'h': rect.h,
+                'label': rect.label,
+                'score': rect.score,
+            }
+            frame_list.append(json_item)
+        json_list.append(frame_list)
+    return json_list
+
+
 def draw_results(input_images, results, save_path=None):
     # 获取输出结果
     for i, frame_result in enumerate(results):

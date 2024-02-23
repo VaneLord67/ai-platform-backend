@@ -5,7 +5,7 @@ import cv2
 from nameko.events import event_handler, BROADCAST
 from nameko.standalone.rpc import ClusterRpcProxy
 
-from ais.yolo_hx import inference, parse_results, draw_results
+from ais.yolo_hx import inference, parse_results, draw_results, parsed_to_json
 from common import config
 from common.util import clear_video_temp_resource, create_redis_client, \
     clear_camera_temp_resource
@@ -193,5 +193,5 @@ class DetectionService(AIBaseService):
         return {
             'urls': urls,
             'logs': [],
-            'frames': frames,
+            'frames': parsed_to_json(frames),
         }
