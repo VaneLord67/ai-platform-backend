@@ -1,3 +1,4 @@
+import platform
 import subprocess
 import time
 import uuid
@@ -59,7 +60,16 @@ class ManageService:
         LOGGER.info(f"start a {module_name} instance...")
         if module_name == 'detection':
             module_name += '_hx'
-        subprocess.Popen(["start", "nameko", "run",
-                          f"microservice.{module_name}:{service_name.title().replace('_', '')}"],
-                         shell=True)
+        plat = platform.system().lower()
+        if plat == 'windows':
+            subprocess.Popen(["start", "nameko", "run", '--config', 'nameko_config.yaml',
+                              f"microservice.{module_name}:{service_name.title().replace('_', '')}"],
+                             shell=True)
+        elif plat == 'linux':
+            subprocess.Popen(["nohup", "nameko", "run", '--config', 'nameko_config.yaml',
+                              f"microservice.{module_name}:{service_name.title().replace('_', '')}",
+                              '>', 'nameko_log', '&'],
+                             shell=True)
+        else:
+            raise NotImplementedError(f"暂不支持{plat}平台")
 
