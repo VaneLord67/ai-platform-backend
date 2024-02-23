@@ -82,13 +82,14 @@ def parse_results(results):
 def parsed_to_json(parsed):
     json_list = []
     for rect in parsed:
+        xmin, ymin, w, h, label, score = rect
         json_item = {
-            'xmin': rect.xmin,
-            'ymin': rect.ymin,
-            'w': rect.w,
-            'h': rect.h,
-            'label': rect.label,
-            'score': rect.score,
+            'xmin': xmin,
+            'ymin': ymin,
+            'w': w,
+            'h': h,
+            'label': label,
+            'score': score,
         }
         json_list.append(json_item)
     return json_list
