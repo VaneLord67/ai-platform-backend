@@ -5,7 +5,6 @@ from flask_nameko import FlaskPooledClusterRpcProxy
 from flask_socketio import SocketIO
 
 rpc = FlaskPooledClusterRpcProxy()
-rpc_before_time = datetime.now()
 socketio = SocketIO()
 
 enforcer = casbin.Enforcer("model.conf", "policy.csv")
