@@ -4,6 +4,7 @@ import cv2
 
 sys.path.append("/home/hx/Yolov8-source/lib")
 
+from ais import libutil_bytetrack as bytetrack_util
 import libyolov8_trt as yolov8_trt
 import faulthandler
 
@@ -114,6 +115,35 @@ def draw_results(input_images, results, save_path=None):
         if save_path:
             # 'results/frame_' + str(i) + '_results.jpg'
             cv2.imwrite(save_path, input_images[i])
+
+
+def draw_track_results(input_images, yolo_rects, save_path=None):
+    for yolo_rect in yolo_rects:
+        xmin, ymin, w, h = yolo_rect.xmin, yolo_rect.ymin, yolo_rect.w, yolo_rect.h
+        # 在图像上绘制矩形框
+        cv2.rectangle(input_images[0], (int(xmin), int(ymin)), (int(xmin + w), int(ymin + h)), (0, 255, 0), 2)
+        # 在矩形框上方绘制标签和置信度和track_id
+        label_text = f"cls{int(yolo_rect.label)} conf{yolo_rect.score:.2f} track_id{int(yolo_rect.track_id)}"
+        cv2.putText(input_images[0], label_text, (int(xmin), int(ymin) - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5,
+                    (0, 255, 0), 2)
+    if save_path:
+        # 'results/frame_' + str(i) + '_results.jpg'
+        cv2.imwrite(save_path, input_images[0])
+
+
+def convert_parsed_to_yolo_rect(parsed):
+    yolo_rects = []
+    for parse_item in parsed:
+        xmin, ymin, w, h, label, score = parse_item
+        yolo_rect = bytetrack_util.ByteTrackUtilYoloRect()
+        yolo_rect.xmin = xmin
+        yolo_rect.ymin = ymin
+        yolo_rect.w = w
+        yolo_rect.h = h
+        yolo_rect.label = label
+        yolo_rect.score = score
+        yolo_rects.append(yolo_rect)
+    return yolo_rects
 
 
 if __name__ == '__main__':

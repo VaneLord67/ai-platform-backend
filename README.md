@@ -177,6 +177,13 @@ make
 # 依赖Eigen3.3.9
 # 将这一行的SHARED改为STATIC，使用Cmake编译
 add_library(${PROJECT_NAME} SHARED
+# 给CMAKE_CXX_FLAGS加上-fPIC
+
+git clone git@github.com:Vertical-Beach/ByteTrack-cpp.git
+cd ByteTrack-cpp
+mkdir build && cd build
+cmake ..
+make
 ```
 
 ### app_yolo

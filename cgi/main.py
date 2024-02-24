@@ -24,6 +24,9 @@ def hello_world():
 
 @app.before_request
 def before_request():
+    g.request_start_time = time.time()
+    g.user = None
+
     rpc_current_time = datetime.now()
     rpc_diff_time = rpc_current_time - cgi.singleton.rpc_before_time
     if rpc_diff_time > timedelta(minutes=10):
@@ -32,8 +35,6 @@ def before_request():
         cgi.singleton.rpc.init_app(app)
         cgi.singleton.rpc_before_time = rpc_current_time
 
-    g.request_start_time = time.time()
-    g.user = None
     if "Authorization" in request.headers:
         user = User()
         authorization = request.headers.get("Authorization")
