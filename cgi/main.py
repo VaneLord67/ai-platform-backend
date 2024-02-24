@@ -1,11 +1,13 @@
+import cgi
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 from urllib.parse import urlparse
 
 from flask import g, request
+from flask_nameko import FlaskPooledClusterRpcProxy
 
 from cgi import app
-from cgi.singleton import rpc, socketio, enforcer
+from cgi.singleton import rpc, socketio, enforcer, rpc_before_time
 from common.api_response import APIResponse
 from common.error_code import ErrorCodeEnum
 from common.log import LOGGER
@@ -22,6 +24,14 @@ def hello_world():
 
 @app.before_request
 def before_request():
+    rpc_current_time = datetime.now()
+    rpc_diff_time = rpc_current_time - cgi.singleton.rpc_before_time
+    if rpc_diff_time > timedelta(minutes=10):
+        # 如果距离上一次重连超过10分钟，则进行一次重连，防止连接丢失，出现amqp异常
+        cgi.singleton.rpc = FlaskPooledClusterRpcProxy()
+        cgi.singleton.rpc.init_app(app)
+        cgi.singleton.rpc_before_time = rpc_current_time
+
     g.request_start_time = time.time()
     g.user = None
     if "Authorization" in request.headers:

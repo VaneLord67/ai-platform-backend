@@ -33,9 +33,16 @@ docker exec -it ai-rabbitmq rabbitmq-plugins enable rabbitmq_mqtt
 
 ### 3. minio
 ```shell
-docker run -d --name ai-minio -p 9000:9000 -p 9001:9001 -e MINIO_ROOT_USER="minio-root-user" -e MINIO_ROOT_PASSWORD="minio-root-password" bitnami/minio:latest
-创建好后到浏览器上localhost:9001上创建一个名为ai-platform的存储桶，登录用户名为minio-root-user，密码为minio-root-password
-并新建一个Access Key，将Access Key和Secret Key复制到config.json中
+# 这里的挂载点选择服务器上磁盘空间较大的位置
+# 下面用的挂载点为/media/hx/1a19b641-b996-4b88-b2ca-1cc3ded71d49/ai-platform/minio_volume
+docker run -d -v /media/hx/1a19b641-b996-4b88-b2ca-1cc3ded71d49/ai-platform/minio_volume/data:/bitnami/minio/data -v /media/hx/1a19b641-b996-4b88-b2ca-1cc3ded71d49/ai-platform/minio_volume/certs:/certs --name ai-minio -p 9000:9000 -p 9001:9001 -e MINIO_DEFAULT_BUCKETS="ai-platform" -e MINIO_ROOT_USER="minio-root-user" -e MINIO_ROOT_PASSWORD="minio-root-password" bitnami/minio:latest
+创建好后访问浏览器上localhost:9001进行登录，登录用户名为minio-root-user，密码为minio-root-password
+新建一个Access Key，将Access Key和Secret Key复制到config.json中
+
+如果发现容器没跑起来，报错权限不足，则
+cd 挂载点
+sudo chmod -R ug+rw certs
+sudo chmod -R ug+rw data 
 ```
 
 ### 4. redis
@@ -67,9 +74,11 @@ ${tensorRT安装目录}/bin/trtexec --onnx=${YoloV8 onnx路径}  --saveEngine=${
 
 ```shell
 git clone git@github.com:opencv/opencv.git
+git checkout 4.8.0
 cd opencv
 mkdir build && cd build
 cmake .. -D BUILD_opencv_world=ON
+# cmake .. -D CMAKE_BUILD_TYPE=Debug -D BUILD_opencv_world=OFF -D WITH_FFMPEG=ON
 make
 # make后在build/lib目录下查看是否生成了libopencv_world.so.4.8.0
 ```

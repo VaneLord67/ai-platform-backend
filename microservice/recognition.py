@@ -57,7 +57,6 @@ class RecognitionService(AIBaseService):
         finally:
             clear_camera_temp_resource(camera_output_path, camera_output_json_path)
 
-
     @staticmethod
     def single_image_cpp_call(img_path, output_path, hyperparameters):
         arg = YoloClsArg(img_path=img_path, hyperparameters=hyperparameters)
@@ -82,6 +81,6 @@ class RecognitionService(AIBaseService):
                              )
             call_cls_yolo(arg)
             AIBaseService.after_video_call(video_output_path, video_output_json_path,
-                             task_id, RecognitionService.name, service_unique_id)
+                                           task_id, RecognitionService.name, service_unique_id)
         finally:
             clear_video_temp_resource(video_path, video_output_path, video_output_json_path)
