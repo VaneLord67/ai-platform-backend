@@ -58,9 +58,12 @@ class ManageService:
     def run_service(self, service_name):
         module_name = service_name.replace("_service", "")
         LOGGER.info(f"start a {module_name} instance...")
-        if module_name == 'detection':
-            module_name += '_hx'
         plat = platform.system().lower()
+        if plat == 'linux':
+            if module_name == 'detection':
+                module_name += '_hx'
+            elif module_name == 'track':
+                module_name += '_hx'
         if plat == 'windows':
             subprocess.Popen(["start", "nameko", "run", '--config', 'nameko_config.yaml',
                               f"microservice.{module_name}:{service_name.title().replace('_', '')}"],
