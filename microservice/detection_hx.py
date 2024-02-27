@@ -6,7 +6,8 @@ import cv2
 from nameko.events import event_handler, BROADCAST
 from nameko.standalone.rpc import ClusterRpcProxy
 
-from ais.yolo_hx import inference, parse_results, draw_results, parsed_to_json
+from ais.yolo_hx import inference, parse_results, draw_results, parsed_to_json, init_yolo_detector_config, \
+    init_yolo_detector_by_config, inference_by_yolo_detector
 from common import config
 from common.UnbufferedVideoCapture import UnbufferedVideoCapture
 from common.log import LOGGER
@@ -68,6 +69,9 @@ class DetectionService(AIBaseService):
             frame_height = int(video_capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
             LOGGER.info(f'camera size: {frame_width}x{frame_height}')
 
+            yolo_config = init_yolo_detector_config(frame_width, frame_height)
+            yolo_detector = init_yolo_detector_by_config(yolo_config)
+
             unbuffered_cap = UnbufferedVideoCapture(camera_id)
 
             fps = 30
@@ -79,6 +83,7 @@ class DetectionService(AIBaseService):
                 while True:
                     key_count = redis_client.exists(stop_signal_key)
                     if key_count > 0:
+                        LOGGER.info("receive stop camera signal")
                         redis_client.rpush(camera_data_queue_name, "stop")
                         redis_client.expire(camera_data_queue_name, time=timedelta(seconds=60))
                         break
@@ -86,7 +91,7 @@ class DetectionService(AIBaseService):
                     # 读取一帧
                     image = unbuffered_cap.read()
                     # 对帧进行处理
-                    results, input_images = inference(image)
+                    results, input_images = inference_by_yolo_detector(yolo_detector, image)
                     rects = parse_results(results)
                     json_items = []
                     for rect in rects:

@@ -40,7 +40,29 @@ Yolov8Detect类:
 '''
 
 
-def inference(image):
+def inference(img):
+    yolov8_detector = init_yolo_detector(img)
+
+    inference_by_yolo_detector(yolov8_detector, img)
+
+    return results, input_images
+
+
+def init_yolo_detector(img):
+    # 配置文件参数定义
+    config = init_yolo_detector_config(img.shape[1], img.shape[0])
+
+    # 初始化推理模型
+    yolov8_detector = yolov8_trt.Yolov8Detect(config)
+
+    return yolov8_detector
+
+
+def init_yolo_detector_by_config(config):
+    return yolov8_trt.Yolov8Detect(config)
+
+
+def init_yolo_detector_config(src_width, src_height):
     # 配置文件参数定义
     config = yolov8_trt.Yolov8Config()
     config.nmsThresh = 0.5
@@ -51,17 +73,18 @@ def inference(image):
 
     config.batchSize = 1
 
-    config.src_width = image.shape[1]
-    config.src_height = image.shape[0]
+    config.src_width = src_width
+    config.src_height = src_height
 
-    # 初始化推理模型
-    yolov8_detector = yolov8_trt.Yolov8Detect(config)
+    return config
 
+
+def inference_by_yolo_detector(yolo_detector, img):
     # 调用推理api进行推理
     input_images = []
     for i in range(9):
-        input_images.append(image)
-    results = yolov8_detector.inference(input_images)
+        input_images.append(img)
+    results = yolo_detector.inference(input_images)
 
     return results, input_images
 
