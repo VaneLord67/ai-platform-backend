@@ -43,7 +43,7 @@ Yolov8Detect类:
 def inference(img):
     yolov8_detector = init_yolo_detector(img)
 
-    inference_by_yolo_detector(yolov8_detector, img)
+    results, input_images = inference_by_yolo_detector(yolov8_detector, img)
 
     return results, input_images
 
@@ -163,7 +163,7 @@ def convert_parsed_to_yolo_rect(parsed):
         yolo_rect.ymin = ymin
         yolo_rect.w = w
         yolo_rect.h = h
-        yolo_rect.label = label
+        yolo_rect.label = int(label)
         yolo_rect.score = score
         yolo_rects.append(yolo_rect)
     return yolo_rects
