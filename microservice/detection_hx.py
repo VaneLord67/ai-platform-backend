@@ -64,12 +64,13 @@ class DetectionService(AIBaseService):
             if not video_capture.isOpened():
                 LOGGER.error("Error: Unable to open camera.")
                 return
-            unbuffered_cap = UnbufferedVideoCapture(video_capture)
             frame_width = int(video_capture.get(cv2.CAP_PROP_FRAME_WIDTH))
             frame_height = int(video_capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
             LOGGER.info(f'camera size: {frame_width}x{frame_height}')
-            fps = 30
 
+            unbuffered_cap = UnbufferedVideoCapture(camera_id)
+
+            fps = 30
             out = cv2.VideoWriter(camera_output_path, cv2.VideoWriter_fourcc(*'avc1'), fps, (frame_width, frame_height))
             redis_client = create_redis_client()
             redis_client.expire(camera_data_queue_name, time=timedelta(seconds=60))
