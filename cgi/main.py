@@ -71,7 +71,7 @@ def after_request(response):
         'response_json': response.get_json(),
         'time': datetime.now(),
     }
-    if request.method != 'OPTIONS' and request.path not in ['/monitor/page', '/monitor/statistics]']:
+    if request.method != 'OPTIONS' and request.path not in ['/monitor/page', '/monitor/statistics']:
         rpc.monitor_service.insert_request_log.call_async(log_data)
     # app.logger.info(log_data)
 
