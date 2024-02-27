@@ -13,6 +13,7 @@ class UnbufferedVideoCapture:
         self.q = multiprocessing.Queue()
         self.process = multiprocessing.Process(target=self._reader, daemon=True,
                                                args=[self.q, self.cap])
+        self.process.start()
 
     # 帧可用时立即读取帧，只保留最新的帧
     @staticmethod
