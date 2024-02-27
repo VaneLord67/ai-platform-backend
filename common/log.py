@@ -11,5 +11,6 @@ formatter = logging.Formatter('%(asctime)s [%(levelname)s] %(message)s')
 # 4.将formatter添加到handler中
 ch.setFormatter(formatter)
 # 5.将handler添加到logger中LOGGER.addHandler(ch)
-LOGGER.addHandler(ch)
+if not LOGGER.hasHandlers():
+    LOGGER.addHandler(ch)
 

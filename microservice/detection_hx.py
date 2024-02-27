@@ -1,4 +1,5 @@
 import json
+import time
 from datetime import timedelta
 
 import cv2
@@ -7,6 +8,7 @@ from nameko.standalone.rpc import ClusterRpcProxy
 
 from ais.yolo_hx import inference, parse_results, draw_results, parsed_to_json
 from common import config
+from common.UnbufferedVideoCapture import UnbufferedVideoCapture
 from common.log import LOGGER
 from common.util import clear_video_temp_resource, create_redis_client, \
     clear_camera_temp_resource
@@ -57,6 +59,7 @@ class DetectionService(AIBaseService):
                         camera_output_path, camera_output_json_path):
         try:
             video_capture = cv2.VideoCapture(camera_id)
+            unbuffered_cap = UnbufferedVideoCapture(video_capture)
             # 检查视频文件是否成功打开
             if not video_capture.isOpened():
                 LOGGER.error("Error: Unable to open camera.")
@@ -78,7 +81,7 @@ class DetectionService(AIBaseService):
                         break
 
                     # 读取一帧
-                    ret, image = video_capture.read()
+                    ret, image = unbuffered_cap.read()
                     # 检查是否成功读取帧
                     if not ret:
                         LOGGER.info("read empty frame from camera")
