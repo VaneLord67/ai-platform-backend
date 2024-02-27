@@ -14,6 +14,10 @@ class UserService:
         pass
 
     @rpc
+    def hello(self):
+        return
+
+    @rpc
     def register(self, user_json) -> str:
         user = User().from_json(user_json)
         username = user.username
