@@ -1,8 +1,6 @@
 import multiprocessing
 
-import cv2
 import queue
-import threading
 
 
 # 无缓存读取视频流

@@ -209,7 +209,7 @@ class AIBaseService(ABC):
         output_video_path = f"temp/output_{task_id}_camera.mp4"
         output_jsonl_path = f"temp/output_{task_id}.jsonl"
 
-        multiprocessing.Process(target=self.camera_cpp_call, daemon=True,
+        multiprocessing.Process(target=self.camera_cpp_call, daemon=False,
                                 args=[camera_id, self.hyperparameters, stop_signal_key,
                                       camera_data_queue_name, log_key, task_id, self.unique_id,
                                       output_video_path, output_jsonl_path]).start()
