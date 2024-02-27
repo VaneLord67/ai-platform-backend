@@ -58,6 +58,7 @@ class DetectionService(AIBaseService):
                         camera_data_queue_name, log_key, task_id, service_unique_id,
                         camera_output_path, camera_output_json_path):
         try:
+            LOGGER.info(f'open camera: {camera_id}')
             video_capture = cv2.VideoCapture(camera_id)
             unbuffered_cap = UnbufferedVideoCapture(video_capture)
             # 检查视频文件是否成功打开
