@@ -30,6 +30,7 @@ def before_request():
     rpc_diff_time = rpc_current_time - cgi.singleton.rpc_before_time
     if rpc_diff_time > timedelta(minutes=10):
         # 如果距离上一次重连超过10分钟，则进行一次重连，防止连接丢失，出现amqp异常
+        LOGGER.info("reconnect rabbitmq")
         try:
             cgi.singleton.rpc.hello()
         except:
