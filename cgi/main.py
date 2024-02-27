@@ -85,8 +85,8 @@ def after_request(response):
         'time': datetime.now(),
     }
     if request.method != 'OPTIONS' and request.path not in ['/monitor/page', '/monitor/statistics']:
-        rpc.monitor_service.insert_request_log.call_async(log_data)
-    # app.logger.info(log_data)
+        future = rpc.monitor_service.insert_request_log.call_async(log_data)
+        future.result()
 
     return response
 
