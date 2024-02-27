@@ -82,11 +82,7 @@ class DetectionService(AIBaseService):
                         break
 
                     # 读取一帧
-                    ret, image = unbuffered_cap.read()
-                    # 检查是否成功读取帧
-                    if not ret:
-                        LOGGER.info("read empty frame from camera")
-                        break
+                    image = unbuffered_cap.read()
                     # 对帧进行处理
                     results, input_images = inference(image)
                     rects = parse_results(results)
