@@ -17,6 +17,7 @@ class UnbufferedVideoCapture:
     def _reader(self):
         print('_reader thread start')
         while True:
+            print('_reader checkpoint')
             ret, frame = self.cap.read()
             if not ret:
                 break
