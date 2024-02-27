@@ -60,13 +60,14 @@ class DetectionService(AIBaseService):
         try:
             LOGGER.info(f'open camera: {camera_id}')
             video_capture = cv2.VideoCapture(camera_id)
-            unbuffered_cap = UnbufferedVideoCapture(video_capture)
             # 检查视频文件是否成功打开
             if not video_capture.isOpened():
                 LOGGER.error("Error: Unable to open camera.")
                 return
+            unbuffered_cap = UnbufferedVideoCapture(video_capture)
             frame_width = int(video_capture.get(cv2.CAP_PROP_FRAME_WIDTH))
             frame_height = int(video_capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
+            LOGGER.info(f'camera size: {frame_width}x{frame_height}')
             fps = 30
 
             out = cv2.VideoWriter(camera_output_path, cv2.VideoWriter_fourcc(*'avc1'), fps, (frame_width, frame_height))

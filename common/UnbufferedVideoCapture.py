@@ -21,6 +21,7 @@ class UnbufferedVideoCapture:
             if not ret:
                 break
             size = q.qsize()
+            print(f'qsize = {size}')
             if size > 2:
                 for i in range(size - 2):
                     try:
