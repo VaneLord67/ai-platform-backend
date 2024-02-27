@@ -206,7 +206,7 @@ class AIBaseService(ABC):
         if 'taskId' not in self.args:
             raise ValueError("task id not found!")
         task_id = self.args['taskId']
-        output_video_path = f"temp/output_{task_id}_{camera_id}.mp4"
+        output_video_path = f"temp/output_{task_id}_camera.mp4"
         output_jsonl_path = f"temp/output_{task_id}.jsonl"
 
         multiprocessing.Process(target=self.camera_cpp_call, daemon=True,

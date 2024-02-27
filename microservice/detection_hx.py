@@ -81,6 +81,7 @@ class DetectionService(AIBaseService):
                     ret, image = video_capture.read()
                     # 检查是否成功读取帧
                     if not ret:
+                        LOGGER.info("read empty frame from camera")
                         break
                     # 对帧进行处理
                     results, input_images = inference(image)
