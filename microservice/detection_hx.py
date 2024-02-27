@@ -110,6 +110,7 @@ class DetectionService(AIBaseService):
 
             # 释放资源
             video_capture.release()
+            unbuffered_cap.release()
             out.release()
 
             AIBaseService.after_camera_call(camera_output_path, camera_output_json_path,
