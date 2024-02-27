@@ -32,7 +32,7 @@ def before_request():
         # 如果距离上一次重连超过10分钟，则进行一次重连，防止连接丢失，出现amqp异常
         LOGGER.info("reconnect rabbitmq")
         try:
-            cgi.singleton.rpc.hello()
+            cgi.singleton.rpc.user_service.hello()
         except:
             pass
         cgi.singleton.rpc_before_time = rpc_current_time
@@ -93,7 +93,7 @@ def after_request(response):
 
 @app.errorhandler(Exception)
 def handle_error(error):
-    LOGGER.error("error: %s", error, exc_info=True)
+    LOGGER.error("error: %s", error, exc_info=False)
     return APIResponse(code=0, message=str(error)).flask_response()
 
 
