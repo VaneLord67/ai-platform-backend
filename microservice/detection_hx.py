@@ -82,7 +82,7 @@ class DetectionService(AIBaseService):
                     # 检查是否成功读取帧
                     if not ret:
                         LOGGER.info("read empty frame from camera")
-                        break
+                        continue
                     # 对帧进行处理
                     results, input_images = inference(image)
                     rects = parse_results(results)
@@ -108,10 +108,9 @@ class DetectionService(AIBaseService):
                         jpg_bytes = jpg_data.tobytes()
                         redis_client.rpush(camera_data_queue_name, jpg_bytes)
 
-                # 释放资源
-                video_capture.release()
-                out.release()
-                cv2.destroyAllWindows()
+            # 释放资源
+            video_capture.release()
+            out.release()
 
             AIBaseService.after_camera_call(camera_output_path, camera_output_json_path,
                                             task_id, DetectionService.name, service_unique_id)
