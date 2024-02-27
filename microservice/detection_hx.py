@@ -7,6 +7,7 @@ from nameko.standalone.rpc import ClusterRpcProxy
 
 from ais.yolo_hx import inference, parse_results, draw_results, parsed_to_json
 from common import config
+from common.log import LOGGER
 from common.util import clear_video_temp_resource, create_redis_client, \
     clear_camera_temp_resource
 from microservice.ai_base import AIBaseService
@@ -58,8 +59,8 @@ class DetectionService(AIBaseService):
             video_capture = cv2.VideoCapture(camera_id)
             # 检查视频文件是否成功打开
             if not video_capture.isOpened():
-                print("Error: Unable to open video file.")
-                exit()
+                LOGGER.error("Error: Unable to open camera.")
+                return
             frame_width = int(video_capture.get(cv2.CAP_PROP_FRAME_WIDTH))
             frame_height = int(video_capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
             fps = 30
