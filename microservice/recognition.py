@@ -1,7 +1,7 @@
 from nameko.events import event_handler, BROADCAST
 
 from ais.yolo_cls import YoloClsArg, call_cls_yolo
-from common.util import get_log_from_redis, clear_video_temp_resource, create_redis_client, clear_camera_temp_resource
+from common.util import get_log_from_redis, create_redis_client, clear_camera_temp_resource
 from microservice.ai_base import AIBaseService
 from model.ai_model import AIModel
 from model.service_info import ServiceInfo

@@ -1,18 +1,16 @@
 import json
-import time
 from datetime import timedelta
 
 import cv2
+import libyolov8_trt as yolov8_trt
 from nameko.events import event_handler, BROADCAST
 from nameko.standalone.rpc import ClusterRpcProxy
 
-from ais.yolo_hx import inference, parse_results, draw_results, parsed_to_json, init_yolo_detector_config, \
-    init_yolo_detector_by_config, inference_by_yolo_detector
-import libyolov8_trt as yolov8_trt
+from ais.yolo_hx import inference, parse_results, draw_results, parsed_to_json, inference_by_yolo_detector
 from common import config
 from common.UnbufferedVideoCapture import UnbufferedVideoCapture
 from common.log import LOGGER
-from common.util import clear_video_temp_resource, create_redis_client, \
+from common.util import create_redis_client, \
     clear_camera_temp_resource
 from microservice.ai_base import AIBaseService
 from microservice.manage import ManageService
