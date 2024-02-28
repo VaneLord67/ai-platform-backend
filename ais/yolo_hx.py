@@ -52,7 +52,7 @@ def init_yolo_detector(img):
     # 配置文件参数定义
     config = init_yolo_detector_config(img.shape[1], img.shape[0])
 
-    print(f'config = {config}')
+    print(f'config src_size = {config.src_width}x{config.src_height}')
     # 初始化推理模型
     yolov8_detector = yolov8_trt.Yolov8Detect(config)
 
