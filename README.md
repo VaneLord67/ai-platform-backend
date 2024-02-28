@@ -26,7 +26,7 @@ docker run -d --name ai-mysql --env=MYSQL_ROOT_PASSWORD=abc123 -p 3307:3306 mysq
 
 ### 2. RabbitMQ
 ```shell
-docker run --privileged -d --name ai-rabbitmq -p 1883:1883 -p 5672:5672 -p 15672:15672 rabbitmq:3.12-management
+docker run --privileged -d --name ai-rabbitmq -p 1884:1883 -p 5673:5672 -p 15673:15672 rabbitmq:3.12-management
 # 开启mqtt协议支持：
 docker exec -it ai-rabbitmq rabbitmq-plugins enable rabbitmq_mqtt
 ```

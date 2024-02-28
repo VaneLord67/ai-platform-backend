@@ -1,6 +1,7 @@
 import json
 import multiprocessing
 import os
+import subprocess
 import threading
 import time
 import uuid
@@ -185,10 +186,17 @@ class AIBaseService(ABC):
         output_video_path = f"temp/output_{video_name}"
         output_jsonl_path = f"temp/output_{task_id}.jsonl"
 
+        hyperparameter_json_str = json.dumps(self.hyperparameters,
+                                             default=lambda o: o.__json__() if hasattr(o, '__json__') else o.__dict__)
+        arg_to_subprocess = [video_path, output_video_path, output_jsonl_path, video_progress_key,
+                             hyperparameter_json_str, task_id, self.unique_id]
+        interpreter_path = sys.executable
+        subprocess.Popen([interpreter_path, "microservice/video_process.py"] + arg_to_subprocess)
+
         # 这里为什么使用多进程进行调用，是因为多线程情况下，cpp侧在计算的时候不会让出cpu，导致服务无法接收其他请求（如服务信息上报事件响应等）
-        multiprocessing.Process(target=self.video_cpp_call, daemon=True,
-                                args=[video_path, output_video_path, output_jsonl_path, video_progress_key,
-                                      self.hyperparameters, task_id, self.unique_id]).start()
+        # multiprocessing.Process(target=self.video_cpp_call, daemon=True,
+        #                         args=[video_path, output_video_path, output_jsonl_path, video_progress_key,
+        #                               self.hyperparameters, task_id, self.unique_id]).start()
 
     @staticmethod
     def video_cpp_call(video_path, output_video_path, output_jsonl_path, video_progress_key,
@@ -298,3 +306,13 @@ class AIBaseService(ABC):
             mqtt_storage.client.loop(timeout=1)
             cluster_rpc.manage_service.change_state_to_ready(service_name, service_unique_id)
             LOGGER.info(f"camera task done, task_id:{task_id}")
+
+
+if __name__ == '__main__':
+    import sys
+
+    interpreter_path = sys.executable
+    print("Python解释器路径:", interpreter_path)
+
+    p = subprocess.Popen([interpreter_path, "microservice/video_process.py", "1", "nihao"])
+    p.wait()
