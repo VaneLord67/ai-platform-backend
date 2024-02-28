@@ -196,6 +196,7 @@ def video_infer_test():
         ret, image = video_capture.read()
         # 检查是否成功读取帧
         if not ret:
+            print('read empty frame')
             break
         current_frame_count += 1
         progress_str = "%.2f" % (current_frame_count / total_frame_count)
