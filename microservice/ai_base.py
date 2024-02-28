@@ -44,8 +44,6 @@ class AIBaseService(ABC):
     redis_storage = RedisStorage()
     mqtt_storage = MQTTStorage()
 
-    object_storage_service = RpcProxy(ObjectStorageService.name)
-
     def __init__(self):
         self.hyperparameters: Union[List[Hyperparameter], None] = None
         self.args: Union[dict, None] = None

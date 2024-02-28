@@ -104,11 +104,11 @@ def looping_heartbeat():
         try:
             response = requests.get(url)
             if response.status_code == 200:
-                LOGGER.info("Heartbeat OK at")
+                LOGGER.info("Heartbeat OK")
             else:
                 LOGGER.info("Heartbeat failed")
-        except Exception as e:
-            LOGGER.error("Error:", e)
+        except:
+            pass
 
 
 if __name__ == '__main__':

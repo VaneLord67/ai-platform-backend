@@ -8,6 +8,7 @@ from nameko.standalone.rpc import ClusterRpcProxy
 
 from ais.yolo_hx import inference, parse_results, draw_results, parsed_to_json, init_yolo_detector_config, \
     init_yolo_detector_by_config, inference_by_yolo_detector
+import libyolov8_trt as yolov8_trt
 from common import config
 from common.UnbufferedVideoCapture import UnbufferedVideoCapture
 from common.log import LOGGER
@@ -69,8 +70,19 @@ class DetectionService(AIBaseService):
             frame_height = int(video_capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
             LOGGER.info(f'camera size: {frame_width}x{frame_height}')
 
-            yolo_config = init_yolo_detector_config(frame_width, frame_height)
-            yolo_detector = init_yolo_detector_by_config(yolo_config)
+             # 配置文件参数定义
+            yolo_config = yolov8_trt.Yolov8Config()
+            yolo_config.nmsThresh = 0.5
+            yolo_config.objThresh = 0.45
+
+            yolo_config.trtModelPath = '/home/hx/Yolov8-source/data/model/yolov8s-d-t-b8.trt'
+            yolo_config.maxBatchSize = 8
+
+            yolo_config.batchSize = 1
+
+            yolo_config.src_width = frame_width
+            yolo_config.src_height = frame_height
+            yolo_detector = yolov8_trt.Yolov8Detect(yolo_config)
 
             unbuffered_cap = UnbufferedVideoCapture(camera_id)
 
@@ -129,7 +141,6 @@ class DetectionService(AIBaseService):
     def video_cpp_call(video_path, video_output_path, video_output_json_path, video_progress_key,
                        hyperparameters, task_id, service_unique_id):
         try:
-            LOGGER.info(f"video_path = {video_path}")
             video_capture = cv2.VideoCapture(video_path)
             # 检查视频文件是否成功打开
             if not video_capture.isOpened():
@@ -137,10 +148,22 @@ class DetectionService(AIBaseService):
                 return
             frame_width = int(video_capture.get(cv2.CAP_PROP_FRAME_WIDTH))
             frame_height = int(video_capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
+            LOGGER.info(f'video size = {frame_width}x{frame_height}')
             total_frame_count = int(video_capture.get(cv2.CAP_PROP_FRAME_COUNT))
 
-            yolo_config = init_yolo_detector_config(frame_width, frame_height)
-            yolo_detector = init_yolo_detector_by_config(yolo_config)
+            # 配置文件参数定义
+            yolo_config = yolov8_trt.Yolov8Config()
+            yolo_config.nmsThresh = 0.5
+            yolo_config.objThresh = 0.45
+
+            yolo_config.trtModelPath = '/home/hx/Yolov8-source/data/model/yolov8s-d-t-b8.trt'
+            yolo_config.maxBatchSize = 8
+
+            yolo_config.batchSize = 1
+
+            yolo_config.src_width = frame_width
+            yolo_config.src_height = frame_height
+            yolo_detector = yolov8_trt.Yolov8Detect(yolo_config)
 
             fps = int(video_capture.get(cv2.CAP_PROP_FPS))
             current_frame_count = 0
@@ -183,7 +206,6 @@ class DetectionService(AIBaseService):
                 # 释放资源
                 video_capture.release()
                 out.release()
-                cv2.destroyAllWindows()
 
                 AIBaseService.after_video_call(video_output_path, video_output_json_path,
                                                task_id, DetectionService.name, service_unique_id)

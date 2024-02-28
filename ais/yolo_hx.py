@@ -180,7 +180,7 @@ def pic_infer_test():
 
 
 def video_infer_test():
-    video_capture = cv2.VideoCapture("people_h264.mp4")
+    video_capture = cv2.VideoCapture("temp/car.mp4")
     # 检查视频文件是否成功打开
     if not video_capture.isOpened():
         print("Error: Unable to open video file.")
@@ -225,7 +225,27 @@ def video_infer_test():
         # 释放资源
     video_capture.release()
 
+def init_test():
+    for i in range(50):
+        yolo_config = yolov8_trt.Yolov8Config()
+        yolo_config.nmsThresh = 0.5
+        yolo_config.objThresh = 0.45
+
+        yolo_config.trtModelPath = '/home/hx/Yolov8-source/data/model/yolov8s-d-t-b8.trt'
+        yolo_config.maxBatchSize = 8
+
+        yolo_config.batchSize = 1
+
+        yolo_config.src_width = 1920
+        yolo_config.src_height = 1080
+        yolo_detector = yolov8_trt.Yolov8Detect(yolo_config)
+    
+
 
 if __name__ == '__main__':
-    multiprocessing.Process(target=video_infer_test).start()
+    import eventlet
+    eventlet.monkey_patch()
+    # multiprocessing.Process(target=video_infer_test).start()
+    # init_test()
+    multiprocessing.Process(target=init_test).start()
 
