@@ -187,6 +187,10 @@ def video_infer_test():
     frame_width = int(video_capture.get(cv2.CAP_PROP_FRAME_WIDTH))
     frame_height = int(video_capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
     total_frame_count = int(video_capture.get(cv2.CAP_PROP_FRAME_COUNT))
+
+    yolo_config = init_yolo_detector_config(frame_width, frame_height)
+    yolo_detector = init_yolo_detector_by_config(yolo_config)
+
     fps = int(video_capture.get(cv2.CAP_PROP_FPS))
     current_frame_count = 0
 
@@ -202,7 +206,7 @@ def video_infer_test():
         progress_str = "%.2f" % (current_frame_count / total_frame_count)
         print(f'progress_str = {progress_str}')
         # 对帧进行处理
-        results, input_images = inference(image)
+        results, input_images = inference_by_yolo_detector(yolo_detector, image)
 
         rects = parse_results(results)
         json_items = []
