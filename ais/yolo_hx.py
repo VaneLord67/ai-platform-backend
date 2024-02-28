@@ -218,7 +218,7 @@ def video_infer_test():
             }
             json_items.append(json_item)
         # 释放资源
-        video_capture.release()
+    video_capture.release()
 
 
 if __name__ == '__main__':
