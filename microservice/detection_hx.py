@@ -129,11 +129,12 @@ class DetectionService(AIBaseService):
     def video_cpp_call(video_path, video_output_path, video_output_json_path, video_progress_key,
                        hyperparameters, task_id, service_unique_id):
         try:
+            LOGGER.info(f"video_path = {video_path}")
             video_capture = cv2.VideoCapture(video_path)
             # 检查视频文件是否成功打开
             if not video_capture.isOpened():
-                print("Error: Unable to open video file.")
-                exit()
+                LOGGER.error("Error: Unable to open video file.")
+                return
             frame_width = int(video_capture.get(cv2.CAP_PROP_FRAME_WIDTH))
             frame_height = int(video_capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
             total_frame_count = int(video_capture.get(cv2.CAP_PROP_FRAME_COUNT))

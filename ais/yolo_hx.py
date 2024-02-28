@@ -1,3 +1,4 @@
+import multiprocessing
 import sys
 
 import cv2
@@ -226,4 +227,5 @@ def video_infer_test():
 
 
 if __name__ == '__main__':
-    video_infer_test()
+    multiprocessing.Process(target=video_infer_test).start()
+
