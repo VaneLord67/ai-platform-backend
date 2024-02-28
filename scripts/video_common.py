@@ -1,3 +1,5 @@
+import json
+import sys
 from datetime import timedelta
 
 from nameko.standalone.rpc import ClusterRpcProxy
@@ -6,6 +8,23 @@ from common import config
 from common.log import LOGGER
 from common.util import create_redis_client
 from microservice.mqtt_storage import MQTTStorage
+from model.hyperparameter import Hyperparameter
+
+
+def parse_command_args():
+    args = sys.argv[1:]
+    print("Received arguments:", args)
+    if len(args) != 7:
+        raise ValueError('args length error')
+    video_path, video_output_path, video_output_json_path, video_progress_key, \
+        hyperparameters_json_str, task_id, service_unique_id = args
+    hp_dict_list = json.loads(hyperparameters_json_str)
+    hps = []
+    for hp_dict in hp_dict_list:
+        hp = Hyperparameter().from_dict(hp_dict)
+        hps.append(hp)
+    return video_path, video_output_path, video_output_json_path, video_progress_key, \
+        hps, task_id, service_unique_id
 
 
 def after_video_call(video_output_path, video_output_json_path, task_id, service_name, service_unique_id):
