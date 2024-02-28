@@ -7,7 +7,7 @@ from nameko.standalone.rpc import ClusterRpcProxy
 
 from ais.yolo_hx import init_yolo_detector_config, init_yolo_detector_by_config, inference_by_yolo_detector, \
     parse_results, draw_results
-from common.config import config
+from common import config
 from common.log import LOGGER
 from common.util import create_redis_client, clear_video_temp_resource
 from microservice.mqtt_storage import MQTTStorage
