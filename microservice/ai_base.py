@@ -2,6 +2,7 @@ import json
 import multiprocessing
 import os
 import subprocess
+import sys
 import threading
 import time
 import uuid
@@ -10,7 +11,7 @@ from datetime import timedelta
 from typing import List, Union
 
 from nameko.events import event_handler, BROADCAST
-from nameko.rpc import RpcProxy, rpc
+from nameko.rpc import rpc
 from nameko.standalone.rpc import ClusterRpcProxy
 
 from common import config
@@ -18,7 +19,6 @@ from common.log import LOGGER
 from common.util import download_file, clear_image_temp_resource, create_redis_client
 from microservice.manage import ManageService
 from microservice.mqtt_storage import MQTTStorage
-from microservice.object_storage import ObjectStorageService
 from microservice.redis_storage import RedisStorage
 from model.hyperparameter import Hyperparameter
 from model.service_info import ServiceInfo, ServiceReadyState, ServiceRunningState
@@ -309,8 +309,6 @@ class AIBaseService(ABC):
 
 
 if __name__ == '__main__':
-    import sys
-
     interpreter_path = sys.executable
     print("Python解释器路径:", interpreter_path)
 
