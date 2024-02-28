@@ -38,6 +38,9 @@ class AIBaseService(ABC):
     """
     name = "ai_base_service"
 
+    video_script_name = ""
+    camera_script_name = ""
+
     unique_id = str(uuid.uuid4())
     service_info = ServiceInfo()
     state_lock = threading.Lock()
@@ -191,12 +194,7 @@ class AIBaseService(ABC):
         arg_to_subprocess = [video_path, output_video_path, output_jsonl_path, video_progress_key,
                              hyperparameter_json_str, task_id, self.unique_id]
         interpreter_path = sys.executable
-        subprocess.Popen([interpreter_path, "microservice/video_process.py"] + arg_to_subprocess)
-
-        # 这里为什么使用多进程进行调用，是因为多线程情况下，cpp侧在计算的时候不会让出cpu，导致服务无法接收其他请求（如服务信息上报事件响应等）
-        # multiprocessing.Process(target=self.video_cpp_call, daemon=True,
-        #                         args=[video_path, output_video_path, output_jsonl_path, video_progress_key,
-        #                               self.hyperparameters, task_id, self.unique_id]).start()
+        subprocess.Popen([interpreter_path, self.video_script_name] + arg_to_subprocess)
 
     @staticmethod
     def video_cpp_call(video_path, output_video_path, output_jsonl_path, video_progress_key,
@@ -307,10 +305,3 @@ class AIBaseService(ABC):
             cluster_rpc.manage_service.change_state_to_ready(service_name, service_unique_id)
             LOGGER.info(f"camera task done, task_id:{task_id}")
 
-
-if __name__ == '__main__':
-    interpreter_path = sys.executable
-    print("Python解释器路径:", interpreter_path)
-
-    p = subprocess.Popen([interpreter_path, "microservice/video_process.py", "1", "nihao"])
-    p.wait()
