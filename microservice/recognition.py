@@ -26,6 +26,8 @@ class RecognitionService(AIBaseService):
 
     service_info = init_state_info()
 
+    video_script_name = "scripts/recognition_video.py"
+
     @event_handler("manage_service", name + "state_report", handler_type=BROADCAST, reliable_delivery=False)
     def state_report(self, payload):
         super().state_report(payload)
@@ -69,18 +71,3 @@ class RecognitionService(AIBaseService):
             'frames': frames,
             'logs': log_strs,
         }
-
-    @staticmethod
-    def video_cpp_call(video_path, video_output_path, video_output_json_path, video_progress_key,
-                       hyperparameters, task_id, service_unique_id):
-        try:
-            arg = YoloClsArg(video_path=video_path, hyperparameters=hyperparameters,
-                             video_output_path=video_output_path,
-                             video_output_json_path=video_output_json_path,
-                             video_progress_key=video_progress_key,
-                             )
-            call_cls_yolo(arg)
-            AIBaseService.after_video_call(video_output_path, video_output_json_path,
-                                           task_id, RecognitionService.name, service_unique_id)
-        finally:
-            clear_video_temp_resource(video_path, video_output_path, video_output_json_path)

@@ -1,5 +1,4 @@
 import json
-import sys
 from datetime import timedelta
 
 import cv2
@@ -8,7 +7,6 @@ from ais.yolo_hx import init_yolo_detector_config, init_yolo_detector_by_config,
     parse_results, draw_results
 from common.log import LOGGER
 from common.util import create_redis_client, clear_video_temp_resource
-from model.hyperparameter import Hyperparameter
 from scripts.video_common import after_video_call, parse_command_args
 
 
