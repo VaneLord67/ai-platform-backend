@@ -1,3 +1,7 @@
+import multiprocessing
+
+import requests
+
 import cgi
 import time
 from datetime import datetime, timedelta
@@ -19,6 +23,12 @@ rpc.init_app(app)
 @app.route('/')
 def hello_world():
     return 'Hello, World!'
+
+
+@app.route('/heartbeat')
+def heartbeat():
+    rpc.user_service.hello()
+    return 'keep-alive'
 
 
 @app.before_request
@@ -86,6 +96,22 @@ def handle_error(error):
     return APIResponse(code=0, message=str(error)).flask_response()
 
 
+def looping_heartbeat():
+    LOGGER.info("start heartbeat")
+    while True:
+        time.sleep(600)
+        url = "http://localhost:8086/heartbeat"
+        try:
+            response = requests.get(url)
+            if response.status_code == 200:
+                LOGGER.info("Heartbeat OK at", time.strftime('%Y-%m-%d %H:%M:%S'))
+            else:
+                LOGGER.info("Heartbeat failed at", time.strftime('%Y-%m-%d %H:%M:%S'))
+        except Exception as e:
+            LOGGER.error("Error:", e)
+
+
 if __name__ == '__main__':
-    # LOGGER.info("start socketio")
+    LOGGER.info("start cgi")
+    multiprocessing.Process(target=looping_heartbeat).start()
     socketio.run(app, host='0.0.0.0', debug=False, port=8086)
