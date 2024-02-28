@@ -170,9 +170,55 @@ def convert_parsed_to_yolo_rect(parsed):
     return yolo_rects
 
 
-if __name__ == '__main__':
+def pic_infer_test():
     image = cv2.imread('/home/hx/Yolov8-source/data/image/bus.jpg')
     results, input_images = inference(image)
     frames = parse_results(results)
     print(frames)
     draw_results(input_images, results, save_path='test.jpg')
+
+
+def video_infer_test():
+    video_capture = cv2.VideoCapture("people_h264.mp4")
+    # 检查视频文件是否成功打开
+    if not video_capture.isOpened():
+        print("Error: Unable to open video file.")
+        exit()
+    frame_width = int(video_capture.get(cv2.CAP_PROP_FRAME_WIDTH))
+    frame_height = int(video_capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    total_frame_count = int(video_capture.get(cv2.CAP_PROP_FRAME_COUNT))
+    fps = int(video_capture.get(cv2.CAP_PROP_FPS))
+    current_frame_count = 0
+
+    # 逐帧读取视频
+    while True:
+        # 读取一帧
+        ret, image = video_capture.read()
+        # 检查是否成功读取帧
+        if not ret:
+            break
+        current_frame_count += 1
+        progress_str = "%.2f" % (current_frame_count / total_frame_count)
+        print(f'progress_str = {progress_str}')
+        # 对帧进行处理
+        results, input_images = inference(image)
+
+        rects = parse_results(results)
+        json_items = []
+        for rect in rects:
+            xmin, ymin, w, h, label, score = rect
+            json_item = {
+                'xmin': xmin,
+                'ymin': ymin,
+                'w': w,
+                'h': h,
+                'label': label,
+                'score': score,
+            }
+            json_items.append(json_item)
+        # 释放资源
+        video_capture.release()
+
+
+if __name__ == '__main__':
+    video_infer_test()
