@@ -7,6 +7,7 @@ from ais.yolo_hx import parse_results, draw_results, init_yolo_detector_config, 
     inference_by_yolo_detector, convert_parsed_to_yolo_rect
 from ais import libutil_bytetrack as bytetrack_util
 from common.util import create_redis_client, clear_camera_temp_resource
+from microservice.track_hx import TrackService
 from scripts.camera_common import parse_camera_command_args, after_camera_call
 
 
@@ -77,7 +78,7 @@ def camera_cpp_call(camera_id, hyperparameters, stop_signal_key,
             cv2.destroyAllWindows()
 
         after_camera_call(camera_output_path, camera_output_json_path,
-                          task_id, "track_service", service_unique_id)
+                          task_id, TrackService.name, service_unique_id)
     finally:
         clear_camera_temp_resource(camera_output_path, camera_output_json_path)
 
