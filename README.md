@@ -47,7 +47,9 @@ sudo chmod -R ug+rw data
 
 ### 4. redis
 ```shell
-docker run --privileged -d --rm --name ai-redis -p 6379:6379 redis
+# 这里的挂载点选择服务器上磁盘空间较大的位置
+# 下面用的挂载点为/media/hx/1a19b641-b996-4b88-b2ca-1cc3ded71d49/ai-platform/redis_volume
+docker run --privileged -d -v /media/hx/1a19b641-b996-4b88-b2ca-1cc3ded71d49/ai-platform/redis_volume:/data --rm --name ai-redis -p 6379:6379 redis
 ```
 
 ## 驱动、CUDA、CUDNN安装
@@ -214,7 +216,9 @@ python cgi/main.py
 ```cmd
 # 在项目根目录下
 cd ~/ai-platform/ai-platform-backend
+export PYTHONPATH=$PWD
 conda activate ai-platform
+# ubuntu下为conda activate ai-platform_3.8
 
 nameko run --config nameko_config.yaml microservice.manage:ManageService
 nameko run --config nameko_config.yaml microservice.monitor:MonitorService
@@ -223,6 +227,8 @@ nameko run --config nameko_config.yaml microservice.user:UserService
 nameko run --config nameko_config.yaml microservice.mqtt_listener:MQTTListenerService
 
 nameko run --config nameko_config.yaml microservice.detection:DetectionService
+# ubuntu下为 nameko run --config nameko_config.yaml microservice.detection_hx:DetectionService
 nameko run --config nameko_config.yaml microservice.track:TrackService
+# ubuntu下为 nameko run --config nameko_config.yaml microservice.track_hx:TrackService
 nameko run --config nameko_config.yaml microservice.recognition:RecognitionService
 ```

@@ -192,7 +192,15 @@ class AIBaseService(ABC):
                                              default=lambda o: o.__json__() if hasattr(o, '__json__') else o.__dict__)
         arg_to_subprocess = [video_path, output_video_path, output_jsonl_path, video_progress_key,
                              hyperparameter_json_str, task_id, self.unique_id]
+        # 这里从sys获取解释器路径，可以兼容conda虚拟环境
         interpreter_path = sys.executable
+        # 相当于在命令行执行"python xx.py arg1 arg2..."
+        # 因为Python的多进程(multiprocessing.Process)在Ubuntu系统下的实现是使用了fork系统调用，fork会复制父进程Nameko的环境
+        # 导致子进程与rabbitmq进行连接，破坏父进程与rabbitmq的连接（因为占用了同样的channel和锁相关的资源）
+        # 因此，这里选用subprocess.Popen，用执行命令的方法来启动子进程，这样子进程就不会拥有Nameko的环境，与父进程隔离开
+        # 那么在这种方式下，传参的类型为字符串，需要将所有参数都转换为字符串再传递给子进程
+        # 那么这里为什么使用多【进程】进行调用呢
+        # 因为多【线程】情况下，cpp侧在计算的时候不会让出cpu，导致Nameko服务无法接收其他请求（如服务信息上报事件响应等）
         subprocess.Popen([interpreter_path, self.video_script_name] + arg_to_subprocess)
 
     @staticmethod
@@ -217,6 +225,7 @@ class AIBaseService(ABC):
         arg_to_subprocess = [camera_id, hyperparameter_json_str, stop_signal_key, camera_data_queue_name,
                              log_key, task_id, self.unique_id, output_video_path, output_jsonl_path]
         interpreter_path = sys.executable
+        # 这里的设计与handle_video()相同
         subprocess.Popen([interpreter_path, self.camera_script_name] + arg_to_subprocess)
 
     def call_init(self):

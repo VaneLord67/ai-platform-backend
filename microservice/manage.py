@@ -1,3 +1,4 @@
+import os
 import platform
 import subprocess
 import time
@@ -64,13 +65,20 @@ class ManageService:
                 module_name += '_hx'
             elif module_name == 'track':
                 module_name += '_hx'
+        # 获取当前工作目录
+        current_directory = os.getcwd()
+        # 获取当前环境变量
+        current_env = os.environ.copy()
+        current_env["PYTHONPATH"] = current_directory
+
         if plat == 'windows':
             subprocess.Popen(["start", "nameko", "run", '--config', 'nameko_config.yaml',
                               f"microservice.{module_name}:{service_name.title().replace('_', '')}"],
-                             shell=True)
+                             shell=True, env=current_env)
         elif plat == 'linux':
             subprocess.Popen(["nohup", "nameko", "run", '--config', 'nameko_config.yaml',
-                              f"microservice.{module_name}:{service_name.title().replace('_', '')}"])
+                              f"microservice.{module_name}:{service_name.title().replace('_', '')}"],
+                             env=current_env)
         else:
             raise NotImplementedError(f"暂不支持{plat}平台")
 

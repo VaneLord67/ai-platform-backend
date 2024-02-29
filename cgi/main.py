@@ -1,12 +1,9 @@
 import multiprocessing
-
-import requests
-
-import cgi
 import time
-from datetime import datetime, timedelta
+from datetime import datetime
 from urllib.parse import urlparse
 
+import requests
 from flask import g, request
 
 from cgi import app
@@ -68,23 +65,21 @@ def before_request():
 def after_request(response):
     request_duration = time.time() - g.request_start_time
 
-    status_code = None
-    json_dict = response.get_json()
-    if json_dict and 'code' in json_dict and json_dict['code'] != 1:
-        # 如果服务端侧业务code不为1，则说明出错，那么令status_code为500，方便计算流量展示业务中的错误率
-        status_code = 500
-
-    log_data = {
-        'user_id': g.user.id if g.user else -1,
-        'method': request.method,
-        'path': request.path,
-        'status_code': status_code if status_code else response.status_code,
-        'duration': request_duration,
-        'response_json': response.get_json(),
-        'time': datetime.now(),
-    }
     if request.method != 'OPTIONS' and request.path not in ['/monitor/page', '/monitor/statistics']:
-        pass
+        status_code = None
+        json_dict = response.get_json()
+        if json_dict and 'code' in json_dict and json_dict['code'] != 1:
+            # 如果服务端侧业务code不为1，则说明出错，那么令status_code为500，方便计算流量展示业务中的错误率
+            status_code = 500
+        log_data = {
+            'user_id': g.user.id if g.user else -1,
+            'method': request.method,
+            'path': request.path,
+            'status_code': status_code if status_code else response.status_code,
+            'duration': request_duration,
+            'response_json': response.get_json(),
+            'time': datetime.now(),
+        }
         # future = rpc.monitor_service.insert_request_log.call_async(log_data)
         # future.result()
 
