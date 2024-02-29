@@ -5,3 +5,4 @@ temp
 policy.csv
 ais/*.pyd
 ais/*.dll
+__pycache__

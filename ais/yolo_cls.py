@@ -1,6 +1,12 @@
 import uuid
 
-from ais import app_yolo_cls
+import platform
+if platform.system() == 'Linux':
+    from ais import libapp_yolo_cls as app_yolo_cls
+elif platform.system() == 'Windows':
+    from ais import app_yolo_cls as app_yolo_cls
+else:
+    raise Exception("Unsupported platform")
 from model.cls_result import ClsResult
 
 

@@ -1,7 +1,9 @@
+import multiprocessing
 import time
 from datetime import datetime
 from urllib.parse import urlparse
 
+import requests
 from flask import g, request
 
 from cgi import app
@@ -20,10 +22,17 @@ def hello_world():
     return 'Hello, World!'
 
 
+@app.route('/heartbeat')
+def heartbeat():
+    rpc.user_service.hello()
+    return 'keep-alive'
+
+
 @app.before_request
 def before_request():
     g.request_start_time = time.time()
     g.user = None
+
     if "Authorization" in request.headers:
         user = User()
         authorization = request.headers.get("Authorization")
@@ -56,34 +65,49 @@ def before_request():
 def after_request(response):
     request_duration = time.time() - g.request_start_time
 
-    status_code = None
-    json_dict = response.get_json()
-    if json_dict and 'code' in json_dict and json_dict['code'] != 1:
-        # 如果服务端侧业务code不为1，则说明出错，那么令status_code为500，方便计算流量展示业务中的错误率
-        status_code = 500
-
-    log_data = {
-        'user_id': g.user.id if g.user else -1,
-        'method': request.method,
-        'path': request.path,
-        'status_code': status_code if status_code else response.status_code,
-        'duration': request_duration,
-        'response_json': response.get_json(),
-        'time': datetime.now(),
-    }
-    if request.method != 'OPTIONS' and request.path not in ['/monitor/page', '/monitor/statistics]']:
-        rpc.monitor_service.insert_request_log.call_async(log_data)
-    # app.logger.info(log_data)
+    if request.method != 'OPTIONS' and request.path not in ['/monitor/page', '/monitor/statistics']:
+        status_code = None
+        json_dict = response.get_json()
+        if json_dict and 'code' in json_dict and json_dict['code'] != 1:
+            # 如果服务端侧业务code不为1，则说明出错，那么令status_code为500，方便计算流量展示业务中的错误率
+            status_code = 500
+        log_data = {
+            'user_id': g.user.id if g.user else -1,
+            'method': request.method,
+            'path': request.path,
+            'status_code': status_code if status_code else response.status_code,
+            'duration': request_duration,
+            'response_json': response.get_json(),
+            'time': datetime.now(),
+        }
+        # future = rpc.monitor_service.insert_request_log.call_async(log_data)
+        # future.result()
 
     return response
 
 
 @app.errorhandler(Exception)
 def handle_error(error):
-    LOGGER.error("error: %s", error, exc_info=True)
+    LOGGER.error("error: %s", error, exc_info=False)
     return APIResponse(code=0, message=str(error)).flask_response()
 
 
+def looping_heartbeat():
+    LOGGER.info("start heartbeat")
+    while True:
+        time.sleep(600)
+        url = "http://localhost:8086/heartbeat"
+        try:
+            response = requests.get(url)
+            if response.status_code == 200:
+                LOGGER.info("Heartbeat OK")
+            else:
+                LOGGER.info("Heartbeat failed")
+        except:
+            pass
+
+
 if __name__ == '__main__':
-    # LOGGER.info("start socketio")
+    LOGGER.info("start cgi")
+    multiprocessing.Process(target=looping_heartbeat).start()
     socketio.run(app, host='0.0.0.0', debug=False, port=8086)

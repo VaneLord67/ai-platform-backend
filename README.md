@@ -7,8 +7,9 @@
 # build step
 ## python依赖库
 ```text
-# 使用pip install安装库
-pip install flask flask-cors flask_nameko Flask-SocketIO DBUtils mysqlclient mysql-connector-python casbin nameko opencv-python minio psutil GPutil redis paho-mqtt PyJWT
+# 安装Python库
+pip install flask flask-cors flask_nameko Flask-SocketIO DBUtils mysqlclient mysql-connector-python casbin nameko minio psutil GPutil redis paho-mqtt PyJWT
+conda install -c conda-forge opencv
 ```
 
 ## Docker安装
@@ -25,19 +26,30 @@ docker run -d --name ai-mysql --env=MYSQL_ROOT_PASSWORD=abc123 -p 3307:3306 mysq
 
 ### 2. RabbitMQ
 ```shell
-docker run --privileged -d --name ai-rabbitmq -p 1883:1883 -p 5672:5672 -p 15672:15672 rabbitmq:3.12-management
+docker run --privileged -d --name ai-rabbitmq -p 1884:1883 -p 5673:5672 -p 15673:15672 rabbitmq:3.12-management
 # 开启mqtt协议支持：
 docker exec -it ai-rabbitmq rabbitmq-plugins enable rabbitmq_mqtt
 ```
 
 ### 3. minio
 ```shell
-docker run -d --name ai-minio -p 9000:9000 -p 9001:9001 -e MINIO_ROOT_USER="minio-root-user" -e MINIO_ROOT_PASSWORD="minio-root-password" bitnami/minio:latest
+# 这里的挂载点选择服务器上磁盘空间较大的位置
+# 下面用的挂载点为/media/hx/1a19b641-b996-4b88-b2ca-1cc3ded71d49/ai-platform/minio_volume
+docker run -d -v /media/hx/1a19b641-b996-4b88-b2ca-1cc3ded71d49/ai-platform/minio_volume/data:/bitnami/minio/data -v /media/hx/1a19b641-b996-4b88-b2ca-1cc3ded71d49/ai-platform/minio_volume/certs:/certs --name ai-minio -p 9000:9000 -p 9001:9001 -e MINIO_DEFAULT_BUCKETS="ai-platform" -e MINIO_ROOT_USER="minio-root-user" -e MINIO_ROOT_PASSWORD="minio-root-password" bitnami/minio:latest
+创建好后访问浏览器上localhost:9001进行登录，登录用户名为minio-root-user，密码为minio-root-password
+新建一个Access Key，将Access Key和Secret Key复制到config.json中
+
+如果发现容器没跑起来，报错权限不足，则
+cd 挂载点
+sudo chmod -R ug+rw certs
+sudo chmod -R ug+rw data 
 ```
 
 ### 4. redis
 ```shell
-docker run --privileged -d --rm --name ai-redis -p 6379:6379 redis
+# 这里的挂载点选择服务器上磁盘空间较大的位置
+# 下面用的挂载点为/media/hx/1a19b641-b996-4b88-b2ca-1cc3ded71d49/ai-platform/redis_volume
+docker run --privileged -d -v /media/hx/1a19b641-b996-4b88-b2ca-1cc3ded71d49/ai-platform/redis_volume:/data --rm --name ai-redis -p 6379:6379 redis
 ```
 
 ## 驱动、CUDA、CUDNN安装
@@ -64,9 +76,11 @@ ${tensorRT安装目录}/bin/trtexec --onnx=${YoloV8 onnx路径}  --saveEngine=${
 
 ```shell
 git clone git@github.com:opencv/opencv.git
+git checkout 4.8.0
 cd opencv
 mkdir build && cd build
 cmake .. -D BUILD_opencv_world=ON
+# cmake .. -D CMAKE_BUILD_TYPE=Debug -D BUILD_opencv_world=OFF -D WITH_FFMPEG=ON
 make
 # make后在build/lib目录下查看是否生成了libopencv_world.so.4.8.0
 ```
@@ -81,8 +95,9 @@ make
 ```shell
 git clone git@github.com:Cylix/cpp_redis.git
 cd cpp_redis
+git submodule init && git submodule update
 mkdir build && cd build
-cmake ..
+cmake .. -DCMAKE_BUILD_TYPE=Release
 make
 ```
 
@@ -100,6 +115,10 @@ cd ..
 [spdlog安装](https://github.com/gabime/spdlog)
 
 git clone下载其头文件库即可，留待后续使用。
+
+```shell
+git clone git@github.com:gabime/spdlog.git
+```
 
 ### cpp_ai_utils
 [cpp_ai_utils github地址](https://github.com/VaneLord67/cpp_ai_utils)
@@ -144,6 +163,14 @@ make
 
 仅头文件库，git clone后留待后续使用
 
+```shell
+git clone git@gitlab.com:libeigen/eigen.git
+git checkout 3.3.9
+mkdir build && cd build
+cmake ..
+make
+```
+
 ### ByteTrack-cpp
 
 [github地址](https://github.com/Vertical-Beach/ByteTrack-cpp)
@@ -152,6 +179,13 @@ make
 # 依赖Eigen3.3.9
 # 将这一行的SHARED改为STATIC，使用Cmake编译
 add_library(${PROJECT_NAME} SHARED
+# 给CMAKE_CXX_FLAGS加上-fPIC
+
+git clone git@github.com:Vertical-Beach/ByteTrack-cpp.git
+cd ByteTrack-cpp
+mkdir build && cd build
+cmake ..
+make
 ```
 
 ### app_yolo
@@ -182,7 +216,9 @@ python cgi/main.py
 ```cmd
 # 在项目根目录下
 cd ~/ai-platform/ai-platform-backend
+export PYTHONPATH=$PWD
 conda activate ai-platform
+# ubuntu下为conda activate ai-platform_3.8
 
 nameko run --config nameko_config.yaml microservice.manage:ManageService
 nameko run --config nameko_config.yaml microservice.monitor:MonitorService
@@ -191,6 +227,8 @@ nameko run --config nameko_config.yaml microservice.user:UserService
 nameko run --config nameko_config.yaml microservice.mqtt_listener:MQTTListenerService
 
 nameko run --config nameko_config.yaml microservice.detection:DetectionService
+# ubuntu下为 nameko run --config nameko_config.yaml microservice.detection_hx:DetectionService
 nameko run --config nameko_config.yaml microservice.track:TrackService
+# ubuntu下为 nameko run --config nameko_config.yaml microservice.track_hx:TrackService
 nameko run --config nameko_config.yaml microservice.recognition:RecognitionService
 ```

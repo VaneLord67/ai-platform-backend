@@ -2,6 +2,7 @@ import json
 
 from nameko.rpc import rpc
 
+from common.log import LOGGER
 from microservice.mysql_storage import MysqlStorage
 from model.request_log import RequestLog
 from model.statistics import Statistics
@@ -50,22 +51,25 @@ class MonitorService:
     @rpc
     def insert_request_log(self, log_data):
         conn = self.mysql_storage.conn
-        cursor = conn.cursor()
-        insert_sql = """
-               INSERT INTO request_log (user_id, method, path, status_code, duration, response_json, time)
-               VALUES (%s, %s, %s, %s, %s, %s, %s)
-           """
-        cursor.execute(insert_sql, (
-            log_data['user_id'],
-            log_data['method'],
-            log_data['path'],
-            log_data['status_code'],
-            log_data['duration'],
-            json.dumps(log_data['response_json']) if log_data['response_json'] else "",
-            log_data['time'],
-        ))
-        conn.commit()
-        cursor.close()
+        if conn:
+            cursor = conn.cursor()
+            insert_sql = """
+                   INSERT INTO request_log (user_id, method, path, status_code, duration, response_json, time)
+                   VALUES (%s, %s, %s, %s, %s, %s, %s)
+               """
+            cursor.execute(insert_sql, (
+                log_data['user_id'],
+                log_data['method'],
+                log_data['path'],
+                log_data['status_code'],
+                log_data['duration'],
+                json.dumps(log_data['response_json']) if log_data['response_json'] else "",
+                log_data['time'],
+            ))
+            conn.commit()
+            cursor.close()
+        else:
+            LOGGER.error("conn lost in insert_request_log")
 
     @staticmethod
     def build_statistics_sql(time_interval_string: str):
