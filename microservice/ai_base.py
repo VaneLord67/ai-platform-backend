@@ -217,7 +217,7 @@ class AIBaseService(ABC):
         arg_to_subprocess = [camera_id, hyperparameter_json_str, stop_signal_key, camera_data_queue_name,
                              log_key, task_id, self.unique_id, output_video_path, output_jsonl_path]
         interpreter_path = sys.executable
-        subprocess.Popen([interpreter_path, self.video_script_name] + arg_to_subprocess)
+        subprocess.Popen([interpreter_path, self.camera_script_name] + arg_to_subprocess)
 
     def call_init(self):
         output = {

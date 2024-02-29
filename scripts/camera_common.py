@@ -1,12 +1,10 @@
 import json
 import sys
-from datetime import timedelta
 
 from nameko.standalone.rpc import ClusterRpcProxy
 
 from common import config
 from common.log import LOGGER
-from common.util import create_redis_client
 from microservice.mqtt_storage import MQTTStorage
 from model.hyperparameter import Hyperparameter
 
