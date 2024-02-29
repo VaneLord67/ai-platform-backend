@@ -11,7 +11,7 @@ from microservice.mqtt_storage import MQTTStorage
 from model.hyperparameter import Hyperparameter
 
 
-def parse_command_args():
+def parse_video_command_args():
     args = sys.argv[1:]
     print("Received arguments:", args)
     if len(args) != 7:

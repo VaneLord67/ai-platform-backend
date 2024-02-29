@@ -1,5 +1,4 @@
 import json
-import multiprocessing
 import os
 import subprocess
 import sys
@@ -213,16 +212,12 @@ class AIBaseService(ABC):
         output_video_path = f"temp/output_{task_id}_camera.mp4"
         output_jsonl_path = f"temp/output_{task_id}.jsonl"
 
-        multiprocessing.Process(target=self.camera_cpp_call, daemon=False,
-                                args=[camera_id, self.hyperparameters, stop_signal_key,
-                                      camera_data_queue_name, log_key, task_id, self.unique_id,
-                                      output_video_path, output_jsonl_path]).start()
-
-    @staticmethod
-    def camera_cpp_call(camera_id, hyperparameters, stop_signal_key,
-                        camera_data_queue_name, log_key, task_id, service_unique_id,
-                        camera_output_path, camera_output_json_path):
-        raise NotImplementedError("please implement camera_cpp_call")
+        hyperparameter_json_str = json.dumps(self.hyperparameters,
+                                             default=lambda o: o.__json__() if hasattr(o, '__json__') else o.__dict__)
+        arg_to_subprocess = [camera_id, hyperparameter_json_str, stop_signal_key, camera_data_queue_name,
+                             log_key, task_id, self.unique_id, output_video_path, output_jsonl_path]
+        interpreter_path = sys.executable
+        subprocess.Popen([interpreter_path, self.video_script_name] + arg_to_subprocess)
 
     def call_init(self):
         output = {
@@ -304,4 +299,3 @@ class AIBaseService(ABC):
             mqtt_storage.client.loop(timeout=1)
             cluster_rpc.manage_service.change_state_to_ready(service_name, service_unique_id)
             LOGGER.info(f"camera task done, task_id:{task_id}")
-

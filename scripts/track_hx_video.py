@@ -7,7 +7,7 @@ from ais import libutil_bytetrack as bytetrack_util
 from ais.yolo_hx import init_yolo_detector_config, init_yolo_detector_by_config, inference_by_yolo_detector, \
     parse_results, convert_parsed_to_yolo_rect, draw_track_results
 from common.util import create_redis_client, clear_video_temp_resource
-from scripts.video_common import after_video_call, parse_command_args
+from scripts.video_common import after_video_call, parse_video_command_args
 
 
 def video_cpp_call(video_path, video_output_path, video_output_json_path, video_progress_key,
@@ -78,6 +78,6 @@ def video_cpp_call(video_path, video_output_path, video_output_json_path, video_
 
 if __name__ == '__main__':
     video_path, video_output_path, video_output_json_path, video_progress_key, \
-        hps, task_id, service_unique_id = parse_command_args()
+        hps, task_id, service_unique_id = parse_video_command_args()
     video_cpp_call(video_path, video_output_path, video_output_json_path, video_progress_key,
                    hps, task_id, service_unique_id)
