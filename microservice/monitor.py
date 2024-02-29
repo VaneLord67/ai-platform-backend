@@ -1,5 +1,6 @@
 import json
 
+from nameko.events import event_handler
 from nameko.rpc import rpc
 
 from common.log import LOGGER
@@ -71,6 +72,10 @@ class MonitorService:
         else:
             LOGGER.error("conn lost in insert_request_log")
 
+    @event_handler("cgi", "insert_request_log")
+    def insert_request_log_event_handler(self, log_data):
+        self.insert_request_log(log_data)
+
     @staticmethod
     def build_statistics_sql(time_interval_string: str):
         return f"""
@@ -117,4 +122,3 @@ class MonitorService:
             'statistics_for_day': statistics_for_day,
         }
         return r
-

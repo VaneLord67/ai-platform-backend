@@ -5,9 +5,11 @@ from urllib.parse import urlparse
 
 import requests
 from flask import g, request
+from nameko.standalone.events import event_dispatcher
 
 from cgi import app
 from cgi.singleton import rpc, socketio, enforcer
+from common import config
 from common.api_response import APIResponse
 from common.error_code import ErrorCodeEnum
 from common.log import LOGGER
@@ -80,15 +82,15 @@ def after_request(response):
             'response_json': response.get_json(),
             'time': datetime.now(),
         }
-        # future = rpc.monitor_service.insert_request_log.call_async(log_data)
-        # future.result()
+        with event_dispatcher(config.get_rpc_config()) as dispatcher:
+            dispatcher("cgi", "insert_request_log", log_data)
 
     return response
 
 
 @app.errorhandler(Exception)
 def handle_error(error):
-    LOGGER.error("error: %s", error, exc_info=False)
+    LOGGER.error("error: %s", error, exc_info=True)
     return APIResponse(code=0, message=str(error)).flask_response()
 
 

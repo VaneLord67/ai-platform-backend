@@ -13,6 +13,8 @@
 
  Date: 16/12/2023 16:45:41
 */
+CREATE DATABASE ai_platform;
+use ai_platform;
 
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
@@ -46,3 +48,5 @@ CREATE TABLE `users`  (
 ) ENGINE = InnoDB AUTO_INCREMENT = 8 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
 
 SET FOREIGN_KEY_CHECKS = 1;
+
+INSERT INTO users (username, password) VALUES ('admin', 'admin');

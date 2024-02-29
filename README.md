@@ -49,6 +49,8 @@ sudo chmod -R ug+rw data
 ```shell
 # 这里的挂载点选择服务器上磁盘空间较大的位置
 # 下面用的挂载点为/media/hx/1a19b641-b996-4b88-b2ca-1cc3ded71d49/ai-platform/redis_volume
+cd 挂载点
+sudo chmod -R ug+rw redis_volume
 docker run --privileged -d -v /media/hx/1a19b641-b996-4b88-b2ca-1cc3ded71d49/ai-platform/redis_volume:/data --rm --name ai-redis -p 6379:6379 redis
 ```
 
