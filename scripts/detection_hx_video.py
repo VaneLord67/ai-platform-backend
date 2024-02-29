@@ -7,6 +7,7 @@ from ais.yolo_hx import init_yolo_detector_config, init_yolo_detector_by_config,
     parse_results, draw_results
 from common.log import LOGGER
 from common.util import create_redis_client, clear_video_temp_resource
+from microservice.detection_hx import DetectionService
 from scripts.video_common import after_video_call, parse_video_command_args
 
 
@@ -70,7 +71,7 @@ def video_cpp_call(video_path, video_output_path, video_output_json_path, video_
             out.release()
 
             after_video_call(video_output_path, video_output_json_path,
-                             task_id, "detection_service", service_unique_id)
+                             task_id, DetectionService.name, service_unique_id)
     finally:
         clear_video_temp_resource(video_path, video_output_path, video_output_json_path)
 

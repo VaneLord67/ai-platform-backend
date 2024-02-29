@@ -7,6 +7,7 @@ from ais import libutil_bytetrack as bytetrack_util
 from ais.yolo_hx import init_yolo_detector_config, init_yolo_detector_by_config, inference_by_yolo_detector, \
     parse_results, convert_parsed_to_yolo_rect, draw_track_results
 from common.util import create_redis_client, clear_video_temp_resource
+from microservice.track_hx import TrackService
 from scripts.video_common import after_video_call, parse_video_command_args
 
 
@@ -71,7 +72,7 @@ def video_cpp_call(video_path, video_output_path, video_output_json_path, video_
             out.release()
 
             after_video_call(video_output_path, video_output_json_path,
-                             task_id, "track_service", service_unique_id)
+                             task_id, TrackService.name, service_unique_id)
     finally:
         clear_video_temp_resource(video_path, video_output_path, video_output_json_path)
 

@@ -8,6 +8,7 @@ from ais.yolo_hx import inference_by_yolo_detector, \
 from common.UnbufferedVideoCapture import UnbufferedVideoCapture
 from common.log import LOGGER
 from common.util import create_redis_client, clear_camera_temp_resource
+from microservice.detection_hx import DetectionService
 from scripts.camera_common import after_camera_call, parse_camera_command_args
 
 
@@ -77,7 +78,7 @@ def camera_cpp_call(camera_id, hyperparameters, stop_signal_key,
         out.release()
 
         after_camera_call(camera_output_path, camera_output_json_path,
-                          task_id, "detection_service", service_unique_id)
+                          task_id, DetectionService.name, service_unique_id)
     finally:
         clear_camera_temp_resource(camera_output_path, camera_output_json_path)
 
