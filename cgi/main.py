@@ -14,6 +14,7 @@ from common.api_response import APIResponse
 from common.error_code import ErrorCodeEnum
 from common.log import LOGGER
 from common.util import decode_jwt
+from microservice.manage import ManageService
 from model.user import User
 
 rpc.init_app(app)
@@ -82,8 +83,11 @@ def after_request(response):
             'response_json': response.get_json(),
             'time': datetime.now(),
         }
-        with event_dispatcher(config.get_rpc_config()) as dispatcher:
-            dispatcher("cgi", "insert_request_log", log_data)
+        try:
+            dispatcher = event_dispatcher(config.get_rpc_config())
+            dispatcher(ManageService.name, "insert_request_log", log_data)
+        except:
+            pass
 
     return response
 
