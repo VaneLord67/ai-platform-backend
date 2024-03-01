@@ -5,8 +5,8 @@ import cv2
 
 from ais.yolo_hx import inference_by_yolo_detector, \
     parse_results, draw_results, init_yolo_detector_config, init_yolo_detector_by_config
-from common.UnbufferedVideoCapture import UnbufferedVideoCapture
 from common.log import LOGGER
+from common.unbuffered_video_capture import UnbufferedVideoCapture
 from common.util import create_redis_client, clear_camera_temp_resource
 from microservice.detection_hx import DetectionService
 from scripts.camera_common import after_camera_call, parse_camera_command_args

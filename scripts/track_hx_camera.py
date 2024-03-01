@@ -6,6 +6,7 @@ import cv2
 from ais.yolo_hx import parse_results, draw_results, init_yolo_detector_config, init_yolo_detector_by_config, \
     inference_by_yolo_detector, convert_parsed_to_yolo_rect
 from ais import libutil_bytetrack as bytetrack_util
+from common.unbuffered_video_capture import UnbufferedVideoCapture
 from common.util import create_redis_client, clear_camera_temp_resource
 from microservice.track_hx import TrackService
 from scripts.camera_common import parse_camera_command_args, after_camera_call
@@ -20,6 +21,7 @@ def camera_cpp_call(camera_id, hyperparameters, stop_signal_key,
         if not video_capture.isOpened():
             print("Error: Unable to open video file.")
             exit()
+        unbuffered_cap = UnbufferedVideoCapture(camera_id)
         frame_width = int(video_capture.get(cv2.CAP_PROP_FRAME_WIDTH))
         frame_height = int(video_capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
         fps = 30
@@ -40,10 +42,7 @@ def camera_cpp_call(camera_id, hyperparameters, stop_signal_key,
                     break
 
                 # 读取一帧
-                ret, image = video_capture.read()
-                # 检查是否成功读取帧
-                if not ret:
-                    break
+                image = unbuffered_cap.read()
                 # 对帧进行处理
                 results, input_images = inference_by_yolo_detector(yolo_detector, image)
                 rects = parse_results(results)
