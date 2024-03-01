@@ -4,6 +4,7 @@ from nameko.events import event_handler
 from nameko.rpc import rpc
 
 from common.log import LOGGER
+from microservice.manage import ManageService
 from microservice.mysql_storage import MysqlStorage
 from model.request_log import RequestLog
 from model.statistics import Statistics
@@ -72,7 +73,7 @@ class MonitorService:
         else:
             LOGGER.error("conn lost in insert_request_log")
 
-    @event_handler("cgi", "insert_request_log")
+    @event_handler(ManageService.name, "insert_request_log")
     def insert_request_log_event_handler(self, log_data):
         self.insert_request_log(log_data)
 
