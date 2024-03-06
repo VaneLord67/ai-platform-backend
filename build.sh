@@ -1,3 +1,10 @@
+#!bin/bash
+# Check if the script is not run with interactive bash
+if [[ "$-" != *i* ]]; then
+    echo "Please run this script with 'bash -i' for interactive mode."
+    exit 1
+fi
+
 cd ~
 mkdir ai-platform
 export MYSQL_PORT=3307
