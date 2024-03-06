@@ -13,6 +13,7 @@ export RABBITMQ_PORT=5673
 export RABBITMQ_WEB_PORT=15673
 export MINIO_PORT=9000
 export MINIO_CONSOLE_PORT=9001
+export REDIS_PORT=6379
 export MINIO_DEFAULT_BUCKETS=ai-platform
 export MINIO_ROOT_USER=minio-root-user
 export MINIO_ROOT_PASSWORD=minio-root-password
@@ -50,6 +51,7 @@ sudo docker run -d --name ai-mysql --env=MYSQL_ROOT_PASSWORD=$MYSQL_ROOT_PASSWOR
 sudo docker run --privileged -d --name ai-rabbitmq -p $MQTT_PORT:1883 -p $RABBITMQ_PORT:5672 -p $RABBITMQ_WEB_PORT:15672 rabbitmq:3.12-management
 sudo docker exec -it ai-rabbitmq rabbitmq-plugins enable rabbitmq_mqtt # enable rabbitmq mqtt protocol
 sudo docker run -d -v $DOCKER_VOLUME_ROOT/minio_volume/data:/bitnami/minio/data -v $DOCKER_VOLUME_ROOT/minio_volume/certs:/certs --name ai-minio -p $MINIO_PORT:9000 -p $MINIO_CONSOLE_PORT:9001 -e MINIO_DEFAULT_BUCKETS=$MINIO_DEFAULT_BUCKETS -e MINIO_ROOT_USER=$MINIO_ROOT_USER -e MINIO_ROOT_PASSWORD=$MINIO_ROOT_PASSWORD bitnami/minio:latest
+sudo docker run --privileged -d -v $DOCKER_VOLUME_ROOT/redis_volume:/data --rm --name ai-redis -p $REDIS_PORT:6379 redis
 
 git clone git@github.com:VaneLord67/ai-platform-backend.git
 cd ai-platform-backend
