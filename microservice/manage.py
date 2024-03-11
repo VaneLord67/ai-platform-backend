@@ -3,6 +3,9 @@ import platform
 import subprocess
 import time
 import uuid
+import sys
+
+sys.path.append("/usr/lib/x86_64-linux-gnu")
 
 from nameko.events import EventDispatcher
 from nameko.rpc import rpc
