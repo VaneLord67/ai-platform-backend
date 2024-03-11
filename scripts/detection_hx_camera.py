@@ -68,9 +68,9 @@ def camera_cpp_call(camera_id, hyperparameters, stop_signal_key,
                 draw_results(input_images, results, save_path=None)
                 if len(input_images) > 0:
                     out.write(input_images[0])
-                    _, jpg_data = cv2.imencode(".jpg", input_images[0])
-                    jpg_bytes = jpg_data.tobytes()
-                    redis_client.rpush(camera_data_queue_name, jpg_bytes)
+                    # _, jpg_data = cv2.imencode(".jpg", input_images[0])
+                    # jpg_bytes = jpg_data.tobytes()
+                    # redis_client.rpush(camera_data_queue_name, jpg_bytes)
 
         # 释放资源
         video_capture.release()
