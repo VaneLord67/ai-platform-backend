@@ -1,4 +1,5 @@
 import json
+import time
 import uuid
 
 from nameko.events import event_handler
@@ -247,3 +248,54 @@ class MonitorService:
             'statistics_for_day': statistics_for_day,
         }
         return r
+
+    @rpc
+    def get_chart(self, start_time, end_time):
+        conn = self.mysql_storage.conn
+        cursor = conn.cursor()
+        query = """
+                SELECT 
+                    DATE_FORMAT(time, '%%Y-%%m-%%d %%H:00:00') AS hour_interval,
+                    path,
+                    COUNT(*) AS record_count
+                FROM 
+                    request_log
+                WHERE path LIKE ('/model/%%/call')
+                """
+        params = ()
+        if start_time == 0:
+            # 如果没有指定开始时间，则设置默认开始时间
+            current_timestamp = time.time()
+            one_day_seconds = 24 * 60 * 60
+            one_day_ago_timestamp = current_timestamp - one_day_seconds
+            # 将秒转换为毫秒
+            start_time = int(one_day_ago_timestamp * 1000)
+        query += f" AND time >= FROM_UNIXTIME(%s / 1000) "
+        params += (start_time,)
+        if end_time != 0:
+            query += f" AND time <= FROM_UNIXTIME(%s / 1000) "
+            params += (end_time,)
+        query += " GROUP BY hour_interval, path ORDER BY hour_interval ASC"
+        print(f"params = {params}")
+        cursor.execute(query, params)
+        result = cursor.fetchall()
+        chart_data = []
+
+        def process_path(path_str):
+            second_slash_index = path_str.find('/', path_str.find('/') + 1)
+            if second_slash_index == -1:
+                return path_str
+            third_slash_index = path_str.find('/', second_slash_index + 1)
+            if third_slash_index == -1:
+                return path_str
+            return path_str[second_slash_index + 1:third_slash_index]
+
+        for r in result:
+            hour_interval, path, record_count = r
+
+            chart_data.append({
+                'hour_interval': hour_interval,
+                'service_name': process_path(path),
+                'record_count': record_count,
+            })
+        return chart_data

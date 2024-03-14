@@ -21,7 +21,7 @@ conda install -c conda-forge opencv
 
 ### 1. MySQL
 ```shell
-docker run -d --name ai-mysql --env=MYSQL_ROOT_PASSWORD=abc123 -p 3307:3306 mysql:latest
+docker run -d --name ai-mysql --env=MYSQL_ROOT_PASSWORD=abc123 -e TZ=Asia/Shanghai -p 3307:3306 mysql:latest
 ```
 
 ### 2. RabbitMQ

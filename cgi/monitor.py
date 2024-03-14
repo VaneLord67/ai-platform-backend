@@ -61,3 +61,12 @@ def get_statistics():
         'statistics_for_hour': statistics_for_hour
     }
     return APIResponse.success_with_data(r).flask_response()
+
+
+@monitor_bp.route('/chart', methods=['GET'])
+@register_route(url_prefix + "/chart", "获取折线图", "GET")
+def get_chart():
+    start_time = request.args.get('startTime', default=0, type=int)
+    end_time = request.args.get('endTime', default=0, type=int)
+    chart_data = rpc.monitor_service.get_chart(start_time, end_time)
+    return APIResponse.success_with_data(chart_data).flask_response()
