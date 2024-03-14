@@ -1,6 +1,9 @@
 import json
+from datetime import datetime
 
-from cgi.singleton import socketio
+from flask import g, request
+
+from cgi.singleton import socketio, rpc
 from common.api_response import APIResponse
 from common.error_code import ErrorCodeEnum
 from model.support_input import CAMERA_TYPE, VIDEO_URL_TYPE
@@ -33,9 +36,20 @@ def async_call(call_function, busy_check_function, json_data, namespace, dynamic
     else:
         raise ValueError("output type error")
     dynamicNamespace.service_unique_id = service_unique_id
+    insert_task(dynamicNamespace.unique_id, dynamicNamespace.source)
     socketio.on_namespace(dynamicNamespace)
     return APIResponse.success_with_data(namespace).flask_response()
 
 
 def if_async_call_type(json_data):
     return json_data['supportInput']['type'] in [CAMERA_TYPE, VIDEO_URL_TYPE]
+
+
+def insert_task(task_id, input_mode):
+    # 连接成功时向数据库写入异步任务的信息
+    user = g.user
+    if user is None:
+        return
+    path = request.path
+    time = datetime.now()
+    rpc.monitor_service.insert_task(task_id, user.id, path, time, input_mode)

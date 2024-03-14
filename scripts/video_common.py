@@ -9,6 +9,7 @@ from common.log import LOGGER
 from common.util import create_redis_client
 from microservice.mqtt_storage import MQTTStorage
 from model.hyperparameter import Hyperparameter
+from scripts.camera_common import insert_async_task_request_log
 
 
 def parse_video_command_args():
@@ -49,6 +50,7 @@ def after_video_call(video_output_path, video_output_json_path, task_id, service
             'video_url': video_url,
             'json_url': json_url,
         }
+        insert_async_task_request_log(cluster_rpc, msg)
         mqtt_storage.push_message(json.dumps(msg))
         mqtt_storage.client.loop(timeout=1)
         cluster_rpc.manage_service.change_state_to_ready(service_name, service_unique_id)

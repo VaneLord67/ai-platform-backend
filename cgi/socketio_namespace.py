@@ -24,8 +24,6 @@ class DynamicNamespace(Namespace):
         self.unique_id: str = unique_id
         self.stop_signal_key: str = unique_id + "_stop"
         self.queue_name: str = unique_id + "_queue_name"
-        # self.stop_signal_key: str = "stop"
-        # self.queue_name: str = "my_queue"
         self.service_unique_id = service_unique_id
         self.log_key = unique_id + "_log"
         self.video_progress_key: str = unique_id + "_video_progress"

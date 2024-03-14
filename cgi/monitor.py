@@ -14,9 +14,17 @@ monitor_bp = Blueprint('monitor', __name__, url_prefix=url_prefix)
 def get_monitor_data_page():
     page_size = request.args.get('pageSize', default=5, type=int)
     page_num = request.args.get('pageNum', default=1, type=int)
-    total_num = rpc.monitor_service.get_total_num()
+    username = request.args.get('username', default="", type=str)
+    service_name = request.args.get('serviceName', default="", type=str)
+    start_time = request.args.get('startTime', default=0, type=int)
+    end_time = request.args.get('endTime', default=0, type=int)
+    input_mode = request.args.get('inputMode', default="", type=str)
+
+    total_num = rpc.monitor_service.get_total_num(username, service_name, start_time, end_time, input_mode)
     total_page = (total_num + page_size - 1) // page_size
-    request_log_json_strs = rpc.monitor_service.get_monitor_data_list(page_num, page_size)
+    request_log_json_strs = rpc.monitor_service.get_monitor_data_list(page_num, page_size,
+                                                                      username, service_name,
+                                                                      start_time, end_time, input_mode)
     request_logs = []
     for request_log_json_str in request_log_json_strs:
         request_logs.append(RequestLog().from_json(request_log_json_str))

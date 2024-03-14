@@ -2,7 +2,6 @@ from common.util import JsonBase
 
 SINGLE_PICTURE_URL_TYPE = "single_picture_url"
 MULTIPLE_PICTURE_URL_TYPE = "multiple_picture_url"
-PICTURE_STREAM_TYPE = "picture_stream"
 VIDEO_URL_TYPE = "video_url"
 CAMERA_TYPE = "camera"
 

@@ -1,12 +1,17 @@
 import json
 import sys
+from datetime import datetime
 
+from flask import request
 from nameko.standalone.rpc import ClusterRpcProxy
 
+from cgi.singleton import rpc
 from common import config
 from common.log import LOGGER
 from microservice.mqtt_storage import MQTTStorage
 from model.hyperparameter import Hyperparameter
+from model.support_input import CAMERA_TYPE
+from model.task import Task
 
 
 def parse_camera_command_args():
@@ -40,8 +45,28 @@ def after_camera_call(camera_output_path, camera_output_json_path, task_id, serv
             'json_url': json_url,
         }
         LOGGER.info(f"msg = {msg}")
+        insert_async_task_request_log(cluster_rpc, msg)
         mqtt_storage.push_message(json.dumps(msg))
         mqtt_storage.client.loop(timeout=1)
         cluster_rpc.manage_service.change_state_to_ready(service_name, service_unique_id)
         LOGGER.info(f"camera task done, task_id:{task_id}")
 
+
+def insert_async_task_request_log(rpc_obj, msg):
+    task_id = msg['task_id']
+    task_dict: dict = rpc_obj.monitor_service.get_task_by_task_id(task_id)
+    if task_dict is None:
+        return
+    task: Task = Task().from_dict(task_dict)
+    request_duration = datetime.now() - task.time
+    log_data = {
+        'user_id': task.user_id,
+        'method': request.method,
+        'path': request.path,
+        'status_code': 200,
+        'duration': request_duration.total_seconds(),
+        'response_json': msg,
+        'time': datetime.now(),
+        'input_mode': task.input_mode
+    }
+    rpc_obj.monitor_service.insert_request_log(log_data)

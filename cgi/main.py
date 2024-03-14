@@ -66,9 +66,9 @@ def before_request():
 
 @app.after_request
 def after_request(response):
-    request_duration = time.time() - g.request_start_time
+    request_duration = time.time() - g.request_start_time # unit: seconds
 
-    if request.method != 'OPTIONS' and request.path not in ['/monitor/page', '/monitor/statistics']:
+    if request.method != 'OPTIONS' and request.path.startswith("/model") and request.path.endswith("/call"):
         status_code = None
         json_dict = response.get_json()
         if json_dict and 'code' in json_dict and json_dict['code'] != 1:
@@ -79,8 +79,9 @@ def after_request(response):
             'method': request.method,
             'path': request.path,
             'status_code': status_code if status_code else response.status_code,
+            'body': request.get_json(),
             'duration': request_duration,
-            'response_json': response.get_json(),
+            'response_json': json_dict,
             'time': datetime.now(),
         }
         try:
