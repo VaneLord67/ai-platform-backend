@@ -276,7 +276,6 @@ class MonitorService:
             query += f" AND time <= FROM_UNIXTIME(%s / 1000) "
             params += (end_time,)
         query += " GROUP BY hour_interval, path ORDER BY hour_interval ASC"
-        print(f"params = {params}")
         cursor.execute(query, params)
         result = cursor.fetchall()
         chart_data = []
