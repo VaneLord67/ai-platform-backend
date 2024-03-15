@@ -1,11 +1,11 @@
 import json
+import logging
 import sys
 from datetime import timedelta
 
 from nameko.standalone.rpc import ClusterRpcProxy
 
 from common import config
-from common.log import LOGGER
 from common.util import create_redis_client
 from microservice.mqtt_storage import MQTTStorage
 from model.hyperparameter import Hyperparameter
@@ -54,4 +54,4 @@ def after_video_call(video_output_path, video_output_json_path, task_id, service
         mqtt_storage.push_message(json.dumps(msg))
         mqtt_storage.client.loop(timeout=1)
         cluster_rpc.manage_service.change_state_to_ready(service_name, service_unique_id)
-        LOGGER.info(f"video task done, task_id:{task_id}")
+        logging.info(f"video task done, task_id:{task_id}")

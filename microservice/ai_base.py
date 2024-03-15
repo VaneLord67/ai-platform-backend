@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 import subprocess
 import sys
@@ -14,7 +15,6 @@ from nameko.rpc import rpc
 from nameko.standalone.rpc import ClusterRpcProxy
 
 from common import config
-from common.log import LOGGER
 from common.util import download_file, clear_image_temp_resource, create_redis_client
 from microservice.manage import ManageService
 from microservice.mqtt_storage import MQTTStorage
@@ -68,7 +68,7 @@ class AIBaseService(ABC):
 
     @event_handler(ManageService.name, name + "close_event", handler_type=BROADCAST, reliable_delivery=False)
     def close_event_handler(self, payload):
-        LOGGER.info("shutdown service")
+        logging.info("shutdown service")
         # 模拟键盘ctrl+c进行服务停止，如果你有更优雅的方法，可以将其改进
         raise KeyboardInterrupt
 
@@ -82,14 +82,14 @@ class AIBaseService(ABC):
         但是在没有AI微服务实例正在运行的场景下，调用方进行rpc调用会被阻塞，此后如果有实例被新拉起，则实例会立刻接收到该rpc调用而被停止服务。
         这涉及到nameko和rabbitmq的底层原理，我猜测是rpc的调用消息滞留在了消息队列中，导致新的实例启动后立刻拉到这个rpc消息而执行相应的调用。
         """
-        LOGGER.info("receive close one event")
+        logging.info("receive close one event")
         close_unique_id = payload
-        LOGGER.info(f"close_unique_id = {close_unique_id}")
+        logging.info(f"close_unique_id = {close_unique_id}")
         lock_ok = self.redis_storage.client.set(close_unique_id, "locked", ex=timedelta(minutes=1), nx=True)
         if lock_ok:
             return self.close_event_handler()
         else:
-            LOGGER.info("close lock failed, continue running...")
+            logging.info("close lock failed, continue running...")
 
     @event_handler(ManageService.name, name + "state_change", handler_type=BROADCAST, reliable_delivery=False)
     def state_to_ready_handler(self, payload):
@@ -166,7 +166,7 @@ class AIBaseService(ABC):
         output_path = f"temp/{img_name}_{unique_id}/"
         try:
             os.makedirs(output_path, exist_ok=True)
-            LOGGER.info(f"Folder '{output_path}' created successfully.")
+            logging.info(f"Folder '{output_path}' created successfully.")
             # 这里使用【self】.single_image_cpp_call来进行函数调用而不是AIBaseService.single_image_cpp_call
             # 目的是为了将函数调用动态分派，调用子类的实现函数。下同。
             return self.single_image_cpp_call(img_path, output_path, self.hyperparameters)
@@ -290,7 +290,7 @@ class AIBaseService(ABC):
             mqtt_storage.push_message(json.dumps(msg))
             mqtt_storage.client.loop(timeout=1)
             cluster_rpc.manage_service.change_state_to_ready(service_name, service_unique_id)
-            LOGGER.info(f"video task done, task_id:{task_id}")
+            logging.info(f"video task done, task_id:{task_id}")
 
     @staticmethod
     def after_camera_call(camera_output_path, camera_output_json_path, task_id, service_name, service_unique_id):
@@ -305,8 +305,8 @@ class AIBaseService(ABC):
                 'video_url': video_url,
                 'json_url': json_url,
             }
-            LOGGER.info(f"msg = {msg}")
+            logging.info(f"msg = {msg}")
             mqtt_storage.push_message(json.dumps(msg))
             mqtt_storage.client.loop(timeout=1)
             cluster_rpc.manage_service.change_state_to_ready(service_name, service_unique_id)
-            LOGGER.info(f"camera task done, task_id:{task_id}")
+            logging.info(f"camera task done, task_id:{task_id}")

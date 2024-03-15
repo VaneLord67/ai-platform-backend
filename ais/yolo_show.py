@@ -1,12 +1,9 @@
 import base64
 import json
-from typing import Union
 
 import cv2
 import numpy as np
-import redis
 
-from common.config import config
 from common.util import create_redis_client
 from model.box import Box
 

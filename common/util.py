@@ -125,7 +125,7 @@ def connect_to_database():
             return connection
 
     except Error as e:
-        LOGGER.info(f"Error: {e}")
+        LOGGER.error(f"Error: {e}")
         return None
 
 
@@ -139,7 +139,7 @@ def download_file(url, temp_dir='temp'):
             f.write(response.content)
         return file_name, file_path
     else:
-        LOGGER.info(f"Failed to download file from {url}. Status code: {response.status_code}")
+        LOGGER.error(f"Failed to download file from {url}. Status code: {response.status_code}")
         return None
 
 
@@ -187,7 +187,7 @@ def get_video_fps(video_src: str):
     cap = cv2.VideoCapture(video_src)
     # 检查视频是否成功打开
     if not cap.isOpened():
-        LOGGER.info("Error: Could not open video file:", video_src)
+        LOGGER.error("Error: Could not open video file:", video_src)
         return None
     # 获取视频帧率
     fps = cap.get(cv2.CAP_PROP_FPS)
@@ -205,7 +205,7 @@ def remove_file(path):
             os.remove(path)
             LOGGER.info(f'File {path} deleted successfully.')
         except OSError as e:
-            LOGGER.info(f'Error deleting file {path}: {e}')
+            LOGGER.error(f'Error deleting file {path}: {e}')
 
 
 def clear_video_temp_resource(video_path, output_video_path, output_json_path):
@@ -225,7 +225,7 @@ def clear_image_temp_resource(img_path, output_path):
             os.remove(img_path)
             LOGGER.info(f'File {img_path} deleted successfully.')
         except OSError as e:
-            LOGGER.info(f'Error deleting file {img_path}: {e}')
+            LOGGER.error(f'Error deleting file {img_path}: {e}')
     shutil.rmtree(output_path)
     LOGGER.info(f"Folder '{output_path}' deleted successfully.")
 
