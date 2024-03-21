@@ -5,6 +5,7 @@ from urllib.parse import urlparse
 
 import requests
 from flask import g, request
+from flask_socketio import Namespace
 from nameko.standalone.events import event_dispatcher
 
 from cgi import app
@@ -66,7 +67,7 @@ def before_request():
 
 @app.after_request
 def after_request(response):
-    request_duration = time.time() - g.request_start_time # unit: seconds
+    request_duration = time.time() - g.request_start_time  # unit: seconds
 
     if request.method != 'OPTIONS' and request.path.startswith("/model") and request.path.endswith("/call"):
         status_code = None
@@ -114,7 +115,42 @@ def looping_heartbeat():
             pass
 
 
+# 自定义 Namespace
+class TestNamespace(Namespace):
+    def __init__(self, namespace=None):
+        super().__init__(namespace)
+        self.consumer_id = None
+        self.producer_id = None
+
+    def on_connect(self):
+        print('Client connected to TestNamespace')
+
+    def on_disconnect(self):
+        print(f'Client {request.sid} disconnected from TestNamespace')
+        if request.sid == self.consumer_id:
+            self.emit('stop_camera', room=self.producer_id, namespace=self.namespace)
+
+    def on_post_consumer_id(self):
+        self.consumer_id = request.sid
+        print('sid received on post_consumer_id:', self.consumer_id)
+
+    def on_post_producer_id(self):
+        self.producer_id = request.sid
+        print('sid received on post_producer_id:', self.producer_id)
+        self.emit('start_camera_retrieve', room=self.consumer_id, namespace=self.namespace)
+        print('emit start_camera_retrieve to consumer')
+
+    def on_camera_retrieve(self):
+        self.emit('camera_retrieve', room=self.producer_id, namespace=self.namespace)
+        print('emit camera_retrieve to producer')
+
+    def on_camera_data(self, data):
+        self.emit('camera_data', data, room=self.consumer_id, namespace=self.namespace)
+        print('emit camera_data to consumer')
+
+
 if __name__ == '__main__':
     LOGGER.info("start cgi")
     multiprocessing.Process(target=looping_heartbeat).start()
-    socketio.run(app, host='0.0.0.0', debug=False, port=8086)
+    socketio.on_namespace(TestNamespace("/test"))
+    socketio.run(app, host='0.0.0.0', debug=False, port=config.config.get("flask_port"))

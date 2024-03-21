@@ -5,12 +5,10 @@ from datetime import datetime
 from flask import request
 from nameko.standalone.rpc import ClusterRpcProxy
 
-from cgi.singleton import rpc
 from common import config
 from common.log import LOGGER
 from microservice.mqtt_storage import MQTTStorage
 from model.hyperparameter import Hyperparameter
-from model.support_input import CAMERA_TYPE
 from model.task import Task
 
 
@@ -19,16 +17,14 @@ def parse_camera_command_args():
     print("Received arguments:", args)
     if len(args) != 9:
         raise ValueError('args length error')
-    camera_id, hyperparameters_json_str, stop_signal_key, \
-        camera_data_queue_name, log_key, task_id, service_unique_id, \
+    camera_id, hyperparameters_json_str, namespace, task_id, service_unique_id, \
         camera_output_path, camera_output_json_path = args
     hp_dict_list = json.loads(hyperparameters_json_str)
     hps = []
     for hp_dict in hp_dict_list:
         hp = Hyperparameter().from_dict(hp_dict)
         hps.append(hp)
-    return camera_id, hps, stop_signal_key, \
-        camera_data_queue_name, log_key, task_id, service_unique_id, \
+    return camera_id, hps, namespace, task_id, service_unique_id, \
         camera_output_path, camera_output_json_path
 
 

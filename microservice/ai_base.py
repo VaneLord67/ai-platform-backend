@@ -211,9 +211,7 @@ class AIBaseService(ABC):
 
     def handle_camera(self):
         camera_id = self.support_input.value
-        stop_signal_key = self.args['stopSignalKey']
-        camera_data_queue_name = self.args['queueName']
-        log_key = self.args['logKey']
+        namespace = self.args['namespace']
 
         if 'taskId' not in self.args:
             raise ValueError("task id not found!")
@@ -223,8 +221,8 @@ class AIBaseService(ABC):
 
         hyperparameter_json_str = json.dumps(self.hyperparameters,
                                              default=lambda o: o.__json__() if hasattr(o, '__json__') else o.__dict__)
-        arg_to_subprocess = [camera_id, hyperparameter_json_str, stop_signal_key, camera_data_queue_name,
-                             log_key, task_id, self.unique_id, output_video_path, output_jsonl_path]
+        arg_to_subprocess = [camera_id, hyperparameter_json_str, namespace,
+                             task_id, self.unique_id, output_video_path, output_jsonl_path]
         os.environ['PYTHONPATH'] = os.getcwd()
         interpreter_path = sys.executable
         # 这里的设计与handle_video()相同

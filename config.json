@@ -16,5 +16,8 @@
   "minio_url": "localhost:9000",
   "minio_access_key": "FujWoxJFDfBZJUkSKHkz",
   "minio_secret_key": "BCCErWzORCmuce6xoeDKq44bBIhHBIpaj3jCRnAL",
-  "bucket_name": "ai-platform"
+  "bucket_name": "ai-platform",
+
+  "flask_host": "localhost",
+  "flask_port": 8086
 }
