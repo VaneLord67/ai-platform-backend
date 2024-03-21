@@ -51,11 +51,11 @@ class DynamicNamespace(Namespace):
 
     def on_post_consumer_id(self):
         self.consumer_id = request.sid
-        LOGGER.info('sid received on post_consumer_id:', self.consumer_id)
+        LOGGER.info(f'sid received on post_consumer_id: {self.consumer_id}')
 
     def on_post_producer_id(self):
         self.producer_id = request.sid
-        LOGGER.info('sid received on post_producer_id:', self.producer_id)
+        LOGGER.info(f'sid received on post_producer_id: {self.producer_id}')
 
     def on_progress_retrieve(self, data):
         client = self.redis_client
