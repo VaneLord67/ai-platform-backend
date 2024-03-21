@@ -210,7 +210,7 @@ class AIBaseService(ABC):
         raise NotImplementedError("please implement video_cpp_call")
 
     def handle_camera(self):
-        camera_id = self.support_input.value
+        camera_id = str(self.support_input.value)  # 传递给Popen的必须是字符串
         namespace = self.args['namespace']
 
         if 'taskId' not in self.args:

@@ -51,13 +51,11 @@ class DynamicNamespace(Namespace):
 
     def on_post_consumer_id(self):
         self.consumer_id = request.sid
-        print('sid received on post_consumer_id:', self.consumer_id)
+        LOGGER.info('sid received on post_consumer_id:', self.consumer_id)
 
     def on_post_producer_id(self):
         self.producer_id = request.sid
-        # print('sid received on post_producer_id:', self.producer_id)
-        self.emit('start_camera_retrieve', room=self.consumer_id, namespace=self.namespace)
-        # print('emit start_camera_retrieve to consumer')
+        LOGGER.info('sid received on post_producer_id:', self.producer_id)
 
     def on_progress_retrieve(self, data):
         client = self.redis_client
