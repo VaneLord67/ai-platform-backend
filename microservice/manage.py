@@ -44,11 +44,12 @@ class ManageService:
     @rpc
     def get_load(self):
         # 使用redis lua脚本，获取各个主机近一段时间的负载数据
+        timestamp = int(time.time())
         lua_script = """
             -- KEYS[1] 是zset的键名
+            -- ARGV[1] 是秒级Unix时间戳
            
-            local now = redis.call('TIME')
-            local now_timestamp = tonumber(now[1])  -- 将当前时间戳转换为整数
+            local now_timestamp = ARGV[1]
             redis.call('ZREMRANGEBYSCORE', KEYS[1], '-inf', now_timestamp)
             
             local members = redis.call('ZRANGE', KEYS[1], 0, -1)  -- 获取有序集合中的所有成员
@@ -61,7 +62,7 @@ class ManageService:
             return result
         """
         redis_client = self.redis_storage.client
-        host_load_data = redis_client.eval(lua_script, 1, self.load_dependency.load_zset_key_name)
+        host_load_data = redis_client.eval(lua_script, 1, self.load_dependency.load_zset_key_name, timestamp)
         ret = {}
         for host_load_datum in host_load_data:
             hostname = host_load_datum[0].decode('utf-8')
