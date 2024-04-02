@@ -14,14 +14,9 @@ from common.log import LOGGER
 from common.util import clear_camera_temp_resource
 from microservice.detection_hx import DetectionService
 from scripts.camera_common import after_camera_call, parse_camera_command_args
+from video.camera_mode_enum import CameraModeEnum
 from video.sei_injector import SEIInjector
 from video.unbuffered_sei_parser import UnbufferedSEIParser
-
-
-class CameraModeEnum(Enum):
-    WEBRTC_STREAMER = "webrtc-streamer"
-    PYTHON_PUBLISH_STREAM = "python端推流"
-    SEI = "SEI"
 
 
 def camera_cpp_call(camera_id, hyperparameters, namespace, task_id, service_unique_id,
@@ -118,6 +113,18 @@ def camera_cpp_call(camera_id, hyperparameters, namespace, task_id, service_uniq
             if frame_boxes and len(frame_boxes) > 0:
                 boxes = frame_boxes[0]
                 for box in boxes:
+                    xmin = box.left
+                    ymin = box.top
+                    w = box.right - box.left
+                    h = box.bottom - box.top
+                    label = box.label
+                    score = box.score
+                    label_text = f"cls{int(label)} conf{score:.2f}"
+                    cv2.rectangle(image, (int(xmin), int(ymin)),
+                                  (int(xmin + w), int(ymin + h)),
+                                  (0, 255, 0), 2)
+                    cv2.putText(image, label_text, (int(xmin), int(ymin) - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5,
+                                (0, 255, 0), 2)
                     json_item = {
                         'xmin': box.left,
                         'ymin': box.top,
@@ -126,9 +133,6 @@ def camera_cpp_call(camera_id, hyperparameters, namespace, task_id, service_uniq
                         'label': box.label,
                         'score': box.confidence,
                     }
-                    cv2.rectangle(image, (int(json_item['xmin']), int(json_item['ymin'])),
-                                  (int(json_item['xmin'] + json_item['w']), int(json_item['ymin'] + json_item['h'])),
-                                  (0, 255, 0), 2)
                     json_items.append(json_item)
             if camera_mode == CameraModeEnum.PYTHON_PUBLISH_STREAM.value:
                 pipe.stdin.write(image.tostring())

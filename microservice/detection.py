@@ -1,10 +1,10 @@
+import cv2
+import numpy as np
 from nameko.events import event_handler, BROADCAST
 from nameko.standalone.rpc import ClusterRpcProxy
 
-from ais.yolo import YoloArg, call_yolo
+from ais import tensorrt_alpha_pybind
 from common import config
-from common.util import find_any_file, get_log_from_redis, clear_video_temp_resource, create_redis_client, \
-    clear_camera_temp_resource
 from microservice.ai_base import AIBaseService
 from microservice.manage import ManageService
 from model.ai_model import AIModel
@@ -41,6 +41,9 @@ class DetectionService(AIBaseService):
 
     service_info = init_state_info()
 
+    video_script_name = "scripts/detection_video.py"
+    camera_script_name = "scripts/detection_camera.py"
+
     @event_handler(ManageService.name, name + "state_report", handler_type=BROADCAST, reliable_delivery=False)
     def state_report(self, payload):
         super().state_report(payload)
@@ -58,50 +61,38 @@ class DetectionService(AIBaseService):
         super().state_to_ready_handler(payload)
 
     @staticmethod
-    def camera_cpp_call(camera_id, hyperparameters, stop_signal_key,
-                        camera_data_queue_name, log_key, task_id, service_unique_id,
-                        camera_output_path, camera_output_json_path):
-        try:
-            yolo_arg = YoloArg(camera_id=camera_id,
-                               stop_signal_key=stop_signal_key,
-                               queue_name=camera_data_queue_name,
-                               video_output_path=camera_output_path,
-                               video_output_json_path=camera_output_json_path,
-                               is_show=True,
-                               save_path=None,
-                               hyperparameters=hyperparameters,
-                               log_key=log_key)
-            call_yolo(yolo_arg)
-            AIBaseService.after_camera_call(camera_output_path, camera_output_json_path,
-                                            task_id, DetectionService.name, service_unique_id)
-        finally:
-            clear_camera_temp_resource(camera_output_path, camera_output_json_path)
-
-    @staticmethod
-    def video_cpp_call(video_path, video_output_path, video_output_json_path, video_progress_key,
-                       hyperparameters, task_id, service_unique_id):
-        try:
-            yolo_arg = YoloArg(video_path=video_path,
-                               hyperparameters=hyperparameters,
-                               video_output_path=video_output_path,
-                               video_output_json_path=video_output_json_path,
-                               video_progress_key=video_progress_key,
-                               )
-            call_yolo(yolo_arg)
-            AIBaseService.after_video_call(video_output_path, video_output_json_path,
-                                           task_id, DetectionService.name, service_unique_id)
-        finally:
-            clear_video_temp_resource(video_path, video_output_path, video_output_json_path)
-
-    @staticmethod
     def single_image_cpp_call(img_path, output_path, hyperparameters):
-        yolo_arg = YoloArg(img_path=img_path, save_path=output_path, hyperparameters=hyperparameters)
-        frames = call_yolo(yolo_arg)
-        output_img_path = find_any_file(output_path)
-
-        redis_client = create_redis_client()
-        log_strs = get_log_from_redis(redis_client, yolo_arg.log_key)
-
+        log_strs = []
+        img = cv2.imread(img_path)
+        try:
+            width, height = img.shape[1], img.shape[0]
+            detector_config = tensorrt_alpha_pybind.DetectorConfig()
+            detector_config.model_file_path = "E:/GraduationDesign/yolov8n.trt"
+            detector_config.src_width = width
+            detector_config.src_height = height
+            detector_config.batch_size = 1
+            detector = tensorrt_alpha_pybind.Detector(detector_config)
+            frames = detector.inference(np.asarray(img.copy(), dtype=np.uint8))
+            if frames and len(frames) > 0:
+                boxes = frames[0]
+                for box in boxes:
+                    xmin = box.left
+                    ymin = box.top
+                    w = box.right - box.left
+                    h = box.bottom - box.top
+                    label = box.label
+                    score = box.score
+                    label_text = f"cls{int(label)} conf{score:.2f}"
+                    cv2.rectangle(img, (int(xmin), int(ymin)),
+                                  (int(xmin + w), int(ymin + h)),
+                                  (0, 255, 0), 2)
+                    cv2.putText(img, label_text, (int(xmin), int(ymin) - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5,
+                                (0, 255, 0), 2)
+        except Exception as e:
+            log_strs = [str(e)]
+            frames = []
+        output_img_path = output_path + "_0.jpg"
+        cv2.imwrite(output_img_path, img)
         with ClusterRpcProxy(config.get_rpc_config()) as cluster_rpc:
             urls = [cluster_rpc.object_storage_service.upload_object(output_img_path)]
         return {
