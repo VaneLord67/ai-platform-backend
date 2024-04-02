@@ -1,11 +1,11 @@
 import json
+import logging
 import sys
 from datetime import datetime
 
 from nameko.standalone.rpc import ClusterRpcProxy
 
 from common import config
-from common.log import LOGGER
 from common.util import is_integer
 from microservice.mqtt_storage import MQTTStorage
 from model.hyperparameter import Hyperparameter
@@ -42,12 +42,12 @@ def after_camera_call(camera_output_path, camera_output_json_path, task_id, serv
             'video_url': video_url,
             'json_url': json_url,
         }
-        LOGGER.info(f"msg = {msg}")
+        logging.info(f"msg = {msg}")
         insert_async_task_request_log(cluster_rpc, msg)
         mqtt_storage.push_message(json.dumps(msg))
         mqtt_storage.client.loop(timeout=1)
         cluster_rpc.manage_service.change_state_to_ready(service_name, service_unique_id)
-        LOGGER.info(f"camera task done, task_id:{task_id}")
+        logging.info(f"camera task done, task_id:{task_id}")
 
 
 def insert_async_task_request_log(rpc_obj, msg):
