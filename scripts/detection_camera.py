@@ -8,7 +8,7 @@ import socketio
 
 from ais import tensorrt_alpha_pybind
 from common import config
-from common.camera_background_process import CameraBackgroundProcess
+from video.background_write_process import BackgroundWriteProcess
 from common.log import LOGGER
 from common.util import clear_camera_temp_resource
 from microservice.detection_hx import DetectionService
@@ -94,8 +94,8 @@ def camera_cpp_call(camera_id, hyperparameters, namespace, task_id, service_uniq
                 stop_camera_flag = True
 
         sio.connect(f'http://{config.config.get("flask_host")}:{config.config.get("flask_port")}{namespace}')
-        camera_background_process = CameraBackgroundProcess(camera_output_path, camera_output_json_path,
-                                                            width, height)
+        background_write_process = BackgroundWriteProcess(camera_output_path, camera_output_json_path,
+                                                          width, height)
 
         while not stop_camera_flag:
             if camera_mode == CameraModeEnum.SEI.value:
@@ -151,11 +151,11 @@ def camera_cpp_call(camera_id, hyperparameters, namespace, task_id, service_uniq
             else:
                 json_items_str = json.dumps(json_items)
             sio.emit('camera_data', json_items_str, namespace=namespace)
-            camera_background_process.put(image, json_items_str)
+            background_write_process.put(image, json_items_str)
 
         # 释放资源
         sio.disconnect()
-        camera_background_process.release()
+        background_write_process.release()
         unbuffered_sei_parser.release()
         if camera_mode == CameraModeEnum.PYTHON_PUBLISH_STREAM.value:
             pipe.terminate()

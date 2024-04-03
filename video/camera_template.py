@@ -5,7 +5,7 @@ import time
 import socketio
 
 from common import config
-from common.camera_background_process import CameraBackgroundProcess
+from video.background_write_process import BackgroundWriteProcess
 from common.log import LOGGER
 from scripts.camera_common import after_camera_call
 from video.camera_mode_enum import CameraModeEnum
@@ -74,8 +74,8 @@ class CameraTemplate:
                 self.stop_camera_flag = True
 
         sio.connect(f'http://{config.config.get("flask_host")}:{config.config.get("flask_port")}{namespace}')
-        self.camera_background_process = CameraBackgroundProcess(camera_output_path, camera_output_json_path,
-                                                                 self.width, self.height)
+        self.background_write_process = BackgroundWriteProcess(camera_output_path, camera_output_json_path,
+                                                                self.width, self.height)
 
     def loop_process(self):
         while not self.stop_camera_flag:
@@ -107,9 +107,9 @@ class CameraTemplate:
             else:
                 json_items_str = json.dumps(json_items)
             self.sio.emit('camera_data', json_items_str, namespace=self.namespace)
-            self.camera_background_process.put(image, json_items_str)
+            self.background_write_process.put(image, json_items_str)
         self.sio.disconnect()
-        self.camera_background_process.release()
+        self.background_write_process.release()
         self.unbuffered_sei_parser.release()
         if self.camera_mode == CameraModeEnum.PYTHON_PUBLISH_STREAM.value:
             self.pipe.terminate()

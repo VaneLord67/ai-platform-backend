@@ -6,7 +6,7 @@ import cv2
 from ais.yolo_hx import parse_results, draw_results, init_yolo_detector_config, init_yolo_detector_by_config, \
     inference_by_yolo_detector, convert_parsed_to_yolo_rect
 from ais import libutil_bytetrack as bytetrack_util
-from common.unbuffered_video_capture import UnbufferedVideoCapture
+from video.unbuffered_video_capture import UnbufferedVideoCapture
 from common.util import create_redis_client, clear_camera_temp_resource
 from microservice.track_hx import TrackService
 from scripts.camera_common import parse_camera_command_args, after_camera_call
