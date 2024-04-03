@@ -30,17 +30,12 @@ def call():
         output_dict: dict = recall(call_function, default_busy_check_function, json_data)
         if output_dict is None:
             return APIResponse.fail_with_error_code_enum(ErrorCodeEnum.SERVICE_BUSY_ERROR).flask_response()
-        frame_strs = output_dict['frames']
-        logs = output_dict['logs']
-        frames = []
-        for frame_str in frame_strs:
-            frames.append(ClsResult().from_json(frame_str))
         data = {
-            'frames': frames,
-            'logs': logs,
+            'frames': output_dict['frames'],
+            'logs': output_dict['logs'],
         }
         response: APIResponse
-        if len(frames) == 0:
+        if len(output_dict['frames']) == 0:
             response = APIResponse.fail()
         else:
             response = APIResponse.success_with_data(data)

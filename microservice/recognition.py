@@ -1,7 +1,9 @@
+import cv2
+import numpy as np
 from nameko.events import event_handler, BROADCAST
 
-from ais.yolo_cls import YoloClsArg, call_cls_yolo
-from common.util import get_log_from_redis, create_redis_client
+from ais import tensorrt_cls_pybind
+from common.log import LOGGER
 from microservice.ai_base import AIBaseService
 from model.ai_model import AIModel
 from model.service_info import ServiceInfo
@@ -47,13 +49,22 @@ class RecognitionService(AIBaseService):
 
     @staticmethod
     def single_image_cpp_call(img_path, output_path, hyperparameters):
-        arg = YoloClsArg(img_path=img_path, hyperparameters=hyperparameters)
-
-        redis_client = create_redis_client()
-        log_strs = get_log_from_redis(redis_client, arg.log_key)
-
-        frames = call_cls_yolo(arg)
+        img = cv2.imread(img_path)
+        log_strs = []
+        box_json = []
+        try:
+            config = tensorrt_cls_pybind.ClassifierConfig()
+            config.model_file_path = "E:/GraduationDesign/yolov8n-cls.trt"
+            model = tensorrt_cls_pybind.Classifier(config)
+            idx, score = model.inference(np.asarray(img, dtype=np.uint8))
+            box_json.append({
+                'label': idx,
+                'score': score,
+            })
+        except Exception as e:
+            LOGGER.error(e)
+            log_strs.append(str(e))
         return {
-            'frames': frames,
+            'frames': [box_json],
             'logs': log_strs,
         }

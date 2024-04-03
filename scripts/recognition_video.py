@@ -1,26 +1,34 @@
-from ais.yolo_cls import YoloClsArg, call_cls_yolo
+import numpy as np
+
+from ais import tensorrt_cls_pybind
 from common.util import clear_video_temp_resource
 from microservice.recognition import RecognitionService
-from scripts.video_common import after_video_call, parse_video_command_args
+from scripts.video_common import parse_video_command_args
+from video.video_template import VideoTemplate
 
 
 def video_cpp_call(video_path, video_output_path, video_output_json_path, video_progress_key,
                    hyperparameters, task_id, service_unique_id):
     try:
-        arg = YoloClsArg(video_path=video_path, hyperparameters=hyperparameters,
-                         video_output_path=video_output_path,
-                         video_output_json_path=video_output_json_path,
-                         video_progress_key=video_progress_key,
-                         )
-        call_cls_yolo(arg)
-        after_video_call(video_output_path, video_output_json_path,
-                         task_id, RecognitionService.name, service_unique_id)
+        config = tensorrt_cls_pybind.ClassifierConfig()
+        config.model_file_path = "E:/GraduationDesign/yolov8n-cls.trt"
+        model = tensorrt_cls_pybind.Classifier(config)
+
+        def ai_func(image):
+            idx, score = model.inference(np.asarray(image, dtype=np.uint8))
+            cls_json = {
+                'label': idx,
+                'score': score,
+            }
+            return cls_json
+
+        video_template = VideoTemplate(video_path, video_output_path, video_output_json_path, video_progress_key,
+                                       hyperparameters, task_id, service_unique_id, RecognitionService.name, ai_func)
+        video_template.loop_process()
     finally:
         clear_video_temp_resource(video_path, video_output_path, video_output_json_path)
 
 
 if __name__ == '__main__':
-    video_path, video_output_path, video_output_json_path, video_progress_key, \
-        hps, task_id, service_unique_id = parse_video_command_args()
-    video_cpp_call(video_path, video_output_path, video_output_json_path, video_progress_key,
-                   hps, task_id, service_unique_id)
+    video_command_args = parse_video_command_args()
+    video_cpp_call(*video_command_args)
