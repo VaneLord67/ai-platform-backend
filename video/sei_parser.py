@@ -28,14 +28,22 @@ class SEIParser:
         self.pipe = subprocess.Popen(self.command + [url], shell=False, stdout=subprocess.PIPE)
         self.width = 0
         self.height = 0
+        self.url = url
 
     def start(self):
+        """
+        从进程的stdout中读取字节流，字节流中每个消息的格式为：
+        message_type + message
+        其中message_type占message_type_size个字节，根据message_type来决定后面读取的方式
+        """
         while True:
             message_type_byte = self.pipe.stdout.read(self.message_type_size)
             message_type = int.from_bytes(message_type_byte, byteorder='little')
             if message_type == MessageType.END_MESSAGE.value:
+                LOGGER.info(f"url: {self.url} ended")
                 break
             elif message_type == MessageType.PARAMETER_TYPE.value:
+                # 宽度和高度信息很重要，根据宽高才能知道读取帧时应该读多少个字节，即width * height * 3个字节
                 width_byte = self.pipe.stdout.read(self.parameter_type_size)
                 height_byte = self.pipe.stdout.read(self.parameter_type_size)
                 width = int.from_bytes(width_byte, byteorder='little')
@@ -65,6 +73,6 @@ class SEIParser:
             self.pipe.terminate()
 
     def release(self):
-        LOGGER.info("sei parser release")
+        LOGGER.info(f"sei parser {self.url} release")
         if self.pipe:
             self.pipe.terminate()
