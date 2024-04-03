@@ -118,7 +118,7 @@ def camera_cpp_call(camera_id, hyperparameters, namespace, task_id, service_uniq
                     w = box.right - box.left
                     h = box.bottom - box.top
                     label = box.label
-                    score = box.score
+                    score = box.confidence
                     label_text = f"cls{int(label)} conf{score:.2f}"
                     cv2.rectangle(image, (int(xmin), int(ymin)),
                                   (int(xmin + w), int(ymin + h)),

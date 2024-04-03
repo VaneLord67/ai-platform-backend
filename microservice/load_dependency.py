@@ -1,5 +1,4 @@
 import json
-import logging
 import socket
 import time
 
@@ -7,6 +6,7 @@ import psutil
 from GPUtil import GPUtil
 from nameko.extensions import DependencyProvider
 
+from common.log import LOGGER
 from common.util import create_redis_client
 
 
@@ -29,7 +29,7 @@ class LoadDependency(DependencyProvider):
     def report_live_to_redis(self):
         # 向redis的一个zset中上报当前主机的主机名
         # zset的score存储过期时间戳，用于淘汰离线主机
-        logging.info("report live to redis")
+        LOGGER.info("report live to redis")
         redis_client = self.redis_client
         load = self.get_current_host_load()
         hostname = load['hostname']
@@ -64,7 +64,7 @@ class LoadDependency(DependencyProvider):
         hostname = load.pop('hostname')
         redis_client.eval(script_content, 1, f"load_circular_queue_{hostname}",
                           json.dumps(load), self.circular_queue_max_length, self.report_interval * 4)
-        logging.info(f"report load to redis, load: {load}")
+        LOGGER.info(f"report load to redis, load: {load}")
 
     @staticmethod
     def get_current_host_load():

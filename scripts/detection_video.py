@@ -59,7 +59,7 @@ def video_cpp_call(video_path, video_output_path, video_output_json_path, video_
                         w = box.right - box.left
                         h = box.bottom - box.top
                         label = box.label
-                        score = box.score
+                        score = box.confidence
                         label_text = f"cls{int(label)} conf{score:.2f}"
                         cv2.rectangle(image, (int(xmin), int(ymin)),
                                       (int(xmin + w), int(ymin + h)),

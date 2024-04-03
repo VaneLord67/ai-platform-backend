@@ -1,7 +1,6 @@
-import logging
-
 from nameko.rpc import rpc
 
+from common.log import LOGGER
 from common.util import generate_jwt
 from microservice.mysql_storage import MysqlStorage
 from model.user import User
@@ -37,7 +36,7 @@ class UserService:
                     ok = True
                     user_id = cursor.lastrowid
             except Exception as e:
-                logging.info(f"Error: {e}")
+                LOGGER.info(f"Error: {e}")
         jwt = ""
         if ok and user_id != 0:
             jwt = generate_jwt(user_id, username)
@@ -61,7 +60,7 @@ class UserService:
                 if result and len(result) > 0:
                     user_id = result[0]
             except Exception as e:
-                logging.info(f"Error: {e}")
+                LOGGER.info(f"Error: {e}")
         jwt = ""
         if ok and user_id != 0:
             jwt = generate_jwt(user_id, username)

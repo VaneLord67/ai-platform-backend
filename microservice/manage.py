@@ -1,5 +1,4 @@
 import json
-import logging
 import os
 import platform
 import subprocess
@@ -93,19 +92,19 @@ class ManageService:
 
     @rpc
     def close_all_instance(self, service_name):
-        logging.info(f"close all instance: {service_name}")
+        LOGGER.info(f"close all instance: {service_name}")
         self.dispatch(f"{service_name}close_event", service_name)
 
     @rpc
     def close_one_instance(self, service_name):
-        logging.info(f"close one instance: {service_name}")
+        LOGGER.info(f"close one instance: {service_name}")
         close_unique_id = str(uuid.uuid4())
         self.dispatch(f"{service_name}close_one_event", close_unique_id)
 
     @rpc
     def run_service(self, service_name):
         module_name = service_name.replace("_service", "")
-        logging.info(f"start a {module_name} instance...")
+        LOGGER.info(f"start a {module_name} instance...")
         plat = platform.system().lower()
         if plat == 'linux':
             if module_name == 'detection':

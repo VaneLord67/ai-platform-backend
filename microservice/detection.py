@@ -64,6 +64,7 @@ class DetectionService(AIBaseService):
     def single_image_cpp_call(img_path, output_path, hyperparameters):
         log_strs = []
         img = cv2.imread(img_path)
+        box_json = []
         try:
             width, height = img.shape[1], img.shape[0]
             detector_config = tensorrt_alpha_pybind.DetectorConfig()
@@ -81,7 +82,15 @@ class DetectionService(AIBaseService):
                     w = box.right - box.left
                     h = box.bottom - box.top
                     label = box.label
-                    score = box.score
+                    score = box.confidence
+                    box_json.append({
+                            'xmin': xmin,
+                            'ymin': ymin,
+                            'w': w,
+                            'h': h,
+                            'label': label,
+                            'score': score,
+                    })
                     label_text = f"cls{int(label)} conf{score:.2f}"
                     cv2.rectangle(img, (int(xmin), int(ymin)),
                                   (int(xmin + w), int(ymin + h)),
@@ -89,8 +98,9 @@ class DetectionService(AIBaseService):
                     cv2.putText(img, label_text, (int(xmin), int(ymin) - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5,
                                 (0, 255, 0), 2)
         except Exception as e:
+            print(e)
             log_strs = [str(e)]
-            frames = []
+            box_json = []
         output_img_path = output_path + "_0.jpg"
         cv2.imwrite(output_img_path, img)
         with ClusterRpcProxy(config.get_rpc_config()) as cluster_rpc:
@@ -98,5 +108,5 @@ class DetectionService(AIBaseService):
         return {
             'urls': urls,
             'logs': log_strs,
-            'frames': frames,
+            'frames': [box_json],
         }

@@ -1,7 +1,8 @@
-import logging
 import multiprocessing
 
 import cv2
+
+from common.log import LOGGER
 
 
 class CameraBackgroundProcess:
@@ -37,6 +38,6 @@ class CameraBackgroundProcess:
         self.camera_json_queue.put(json_data)
 
     def release(self):
-        logging.info("release camera background process")
+        LOGGER.info("release camera background process")
         self.camera_data_queue.put(None)  # None表示结束信号，子进程接收到None后释放资源，保存文件
         self.process.join()

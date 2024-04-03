@@ -1,9 +1,10 @@
-import logging
 import platform
 import subprocess
 from enum import Enum
 
 import numpy as np
+
+from common.log import LOGGER
 
 plat = platform.system().lower()
 
@@ -46,17 +47,17 @@ class SEIParser:
                 sei_data_len_byte = self.pipe.stdout.read(self.sei_len_size)
                 sei_data_len = int.from_bytes(sei_data_len_byte, byteorder='little')
                 if sei_data_len <= 0:
-                    logging.error("sei data len error")
+                    LOGGER.error("sei data len error")
                     break
                 sei_data = self.pipe.stdout.read(sei_data_len)
                 if len(sei_data) < sei_data_len:
-                    logging.error("sei data error")
+                    LOGGER.error("sei data error")
                     break
                 yield message_type, sei_data.decode('utf-8')
             elif message_type == MessageType.IMAGE_FRAME.value:
                 bgr24_data = self.pipe.stdout.read(self.height * self.width * 3)
                 if len(bgr24_data) < self.height * self.width * 3:
-                    logging.error("bgr24 data len error")
+                    LOGGER.error("bgr24 data len error")
                     break
                 bgr_img = np.frombuffer(bgr24_data, dtype=np.uint8).reshape((self.height, self.width, 3))
                 yield message_type, bgr_img
@@ -64,6 +65,6 @@ class SEIParser:
             self.pipe.terminate()
 
     def release(self):
-        print("sei parser release")
+        LOGGER.info("sei parser release")
         if self.pipe:
             self.pipe.terminate()

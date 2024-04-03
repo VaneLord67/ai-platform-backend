@@ -1,7 +1,7 @@
-import logging
 import multiprocessing
 import queue
 
+from common.log import LOGGER
 from video.sei_parser import MessageType, SEIParser
 
 
@@ -37,7 +37,7 @@ class UnbufferedSEIParser:
                 sei_queue.put(sei_str)
                 continue
             if ffmpeg_parse_data[0] != MessageType.IMAGE_FRAME.value:
-                logging.error("MessageType mismatch")
+                LOGGER.error("MessageType mismatch")
                 q.put(None)
                 break
             image = ffmpeg_parse_data[1]
@@ -65,7 +65,7 @@ class UnbufferedSEIParser:
         return ret
 
     def release(self):
-        print("unbuffered_sei_parser release")
+        LOGGER.info("unbuffered_sei_parser release")
         self.stop_queue.put(None)
         if self.process:
             self.process.join(timeout=5)
