@@ -66,4 +66,4 @@ CREATE TABLE `users`  (
 
 SET FOREIGN_KEY_CHECKS = 1;
 
-INSERT INTO users (username, password) VALUES ('admin', 'admin');
+INSERT INTO users (id, username, password, role) VALUES (1, 'admin', 'admin', 'admin');

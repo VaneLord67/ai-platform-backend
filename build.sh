@@ -32,7 +32,7 @@ sudo chmod -R ug+rw $DOCKER_VOLUME_ROOT/redis_volume
 # install python environment
 conda create -n $AI_PLATFORM_VENV_NAME python=3.8
 conda activate $AI_PLATFORM_VENV_NAME
-pip install flask flask-cors flask_nameko Flask-SocketIO DBUtils mysqlclient mysql-connector-python casbin nameko minio psutil GPutil redis paho-mqtt PyJWT
+pip install flask flask-cors flask_nameko Flask-SocketIO DBUtils mysqlclient mysql-connector-python casbin nameko minio psutil GPutil redis paho-mqtt PyJWT websocket-client
 conda install -c conda-forge opencv
 
 # install docker

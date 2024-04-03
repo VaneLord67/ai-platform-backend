@@ -8,7 +8,7 @@
 ## python依赖库
 ```text
 # 安装Python库
-pip install flask flask-cors flask_nameko Flask-SocketIO DBUtils mysqlclient mysql-connector-python casbin nameko minio psutil GPutil redis paho-mqtt PyJWT
+pip install flask flask-cors flask_nameko Flask-SocketIO DBUtils mysqlclient mysql-connector-python casbin nameko minio psutil GPutil redis paho-mqtt PyJWT websocket-client
 conda install -c conda-forge opencv
 ```
 
@@ -22,6 +22,10 @@ conda install -c conda-forge opencv
 ### 1. MySQL
 ```shell
 docker run -d --name ai-mysql --env=MYSQL_ROOT_PASSWORD=abc123 -e TZ=Asia/Shanghai -p 3307:3306 mysql:latest
+# 初始化数据库
+docker exec -it ai-mysql mysql -uroot -pabc123 < sql/ai-platform.sql
+# 初始化casbin policy
+cat base_policy.csv > policy.csv
 ```
 
 ### 2. RabbitMQ
