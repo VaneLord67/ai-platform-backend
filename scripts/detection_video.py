@@ -89,7 +89,5 @@ def video_cpp_call(video_path, video_output_path, video_output_json_path, video_
 
 
 if __name__ == '__main__':
-    video_path, video_output_path, video_output_json_path, video_progress_key, \
-        hps, task_id, service_unique_id = parse_video_command_args()
-    video_cpp_call(video_path, video_output_path, video_output_json_path, video_progress_key,
-                   hps, task_id, service_unique_id)
+    video_args = parse_video_command_args()
+    video_cpp_call(*video_args)

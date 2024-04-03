@@ -11,11 +11,9 @@ from typing import List, Union
 
 from nameko.events import event_handler, BROADCAST
 from nameko.rpc import rpc
-from nameko.standalone.rpc import ClusterRpcProxy
 
-from common import config
 from common.log import LOGGER
-from common.util import download_file, clear_image_temp_resource, create_redis_client
+from common.util import download_file, clear_image_temp_resource
 from microservice.manage import ManageService
 from microservice.mqtt_storage import MQTTStorage
 from microservice.redis_storage import RedisStorage
