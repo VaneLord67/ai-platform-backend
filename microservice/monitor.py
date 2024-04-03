@@ -210,7 +210,7 @@ class MonitorService:
                             WHERE 
                                 path LIKE ('/model/%%/call')
                                 AND input_mode IN ('{SINGLE_PICTURE_URL_TYPE}', '{MULTIPLE_PICTURE_URL_TYPE}')
-                                AND time >= NOW() + INTERVAL 8 HOUR - INTERVAL {time_interval_string} 
+                                AND time >= NOW() - INTERVAL {time_interval_string} 
                             GROUP BY 
                                 path
                             ORDER BY 
