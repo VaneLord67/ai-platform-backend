@@ -1,7 +1,6 @@
 import json
 import subprocess
 import time
-from enum import Enum
 
 import cv2
 import numpy as np
@@ -29,6 +28,7 @@ def camera_cpp_call(camera_id, hyperparameters, namespace, task_id, service_uniq
         for hyperparameter in hyperparameters:
             if hyperparameter.name == 'camera_mode':
                 camera_mode = hyperparameter.value
+                break
         LOGGER.info(f'camera_mode: {camera_mode}')
 
         diff_timestamp = 0
@@ -136,7 +136,6 @@ def camera_cpp_call(camera_id, hyperparameters, namespace, task_id, service_uniq
                     json_items.append(json_item)
             if camera_mode == CameraModeEnum.PYTHON_PUBLISH_STREAM.value:
                 pipe.stdin.write(image.tostring())
-            json_items_str = ""
             if camera_mode == CameraModeEnum.SEI.value:
                 camera_data = {
                     'data': json_items,
@@ -152,8 +151,6 @@ def camera_cpp_call(camera_id, hyperparameters, namespace, task_id, service_uniq
             else:
                 json_items_str = json.dumps(json_items)
             sio.emit('camera_data', json_items_str, namespace=namespace)
-            # draw_results(input_images, results, save_path=None)
-            # if len(input_images) > 0:
             camera_background_process.put(image, json_items_str)
 
         # 释放资源

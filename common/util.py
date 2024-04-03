@@ -1,5 +1,6 @@
 import json
 import os
+import platform
 import re
 import shutil
 import socket
@@ -17,6 +18,7 @@ from mysql.connector import Error
 from common.config import config
 from common.log import LOGGER
 
+plat = platform.system().lower()
 
 class JsonEncoder(json.JSONEncoder):
     """Extended json encoder to support custom class types."""
@@ -231,9 +233,12 @@ def clear_image_temp_resource(img_path, output_path):
 
 
 def get_log_from_redis(redis_client: redis.StrictRedis, log_key: str):
-    logs: Union[List[bytes], List[str]] = redis_client.lpop(log_key, 65535)
+    if plat == 'linux':
+        logs: Union[List[bytes], List[str]] = redis_client.lpop(log_key, 65535)
+    else:
+        logs: Union[List[bytes], List[str]] = [redis_client.lpop(log_key)]
     if logs and len(logs) > 0:
-        return [log.decode('utf-8') for log in logs]
+        return [log.decode('utf-8') for log in logs if log]
     return []
 
 

@@ -8,6 +8,7 @@ class SEIInjector:
     command = ['video/ffmpeg_sei_insert.exe' if plat == 'windows' else 'video/ffmpeg_sei_insert']
 
     def __init__(self, rtsp_url, rtmp_url):
+        # 将rtsp流插入SEI信息转为rtmp流
         self.pipe = subprocess.Popen(self.command + [rtsp_url, rtmp_url], shell=False, stdout=subprocess.DEVNULL)
 
     def release(self):

@@ -22,8 +22,9 @@ class SEIParser:
     sei_len_size = 4
     command = ['video/ffmpeg_sei_parse.exe' if plat == 'windows' else 'video/ffmpeg_sei_parser']
 
-    def __init__(self, rtmp_url):
-        self.pipe = subprocess.Popen(self.command + [rtmp_url], shell=False, stdout=subprocess.PIPE)
+    def __init__(self, url):
+        # rtsp/rtmp都可以作为url
+        self.pipe = subprocess.Popen(self.command + [url], shell=False, stdout=subprocess.PIPE)
         self.width = 0
         self.height = 0
 
