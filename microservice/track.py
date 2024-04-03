@@ -35,6 +35,9 @@ class TrackService(AIBaseService):
 
     service_info = init_state_info()
 
+    video_script_name = "scripts/track_video.py"
+    camera_script_name = "scripts/track_camera.py"
+
     @event_handler("manage_service", name + "state_report", handler_type=BROADCAST, reliable_delivery=False)
     def state_report(self, payload):
         super().state_report(payload)

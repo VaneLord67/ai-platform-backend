@@ -10,7 +10,8 @@ from scripts.video_common import after_video_call
 
 class VideoTemplate:
     def __init__(self, video_path, video_output_path, video_output_json_path, video_progress_key,
-                 hyperparameters, task_id, service_unique_id, service_name, ai_func):
+                 hyperparameters, task_id, service_unique_id, service_name, ai_func=None):
+        # ai_func接收image返回以字典为元素的列表
         self.ai_func = ai_func
         self.task_id = task_id
         self.service_unique_id = service_unique_id
@@ -27,6 +28,8 @@ class VideoTemplate:
         frame_width = int(video_capture.get(cv2.CAP_PROP_FRAME_WIDTH))
         frame_height = int(video_capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
         LOGGER.info(f'video size = {frame_width}x{frame_height}')
+        self.width = frame_width
+        self.height = frame_height
         self.total_frame_count = int(video_capture.get(cv2.CAP_PROP_FRAME_COUNT))
         fps = int(video_capture.get(cv2.CAP_PROP_FPS))
         self.video_capture = video_capture

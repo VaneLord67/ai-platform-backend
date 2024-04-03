@@ -28,7 +28,5 @@ def camera_cpp_call(camera_id, hyperparameters, namespace, task_id, service_uniq
 
 
 if __name__ == '__main__':
-    camera_id, hps, namespace, task_id, service_unique_id, \
-        camera_output_path, camera_output_json_path = parse_camera_command_args()
-    camera_cpp_call(camera_id, hps, namespace, task_id, service_unique_id,
-                    camera_output_path, camera_output_json_path)
+    camera_args = parse_camera_command_args()
+    camera_cpp_call(*camera_args)

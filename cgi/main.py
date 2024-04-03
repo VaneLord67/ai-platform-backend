@@ -102,9 +102,9 @@ def handle_error(error):
 
 def looping_heartbeat():
     LOGGER.info("start heartbeat")
+    url = f"http://localhost:{config.config.get('flask_port')}/heartbeat"
     while True:
         time.sleep(600)
-        url = "http://localhost:8086/heartbeat"
         try:
             response = requests.get(url)
             if response.status_code == 200:
@@ -115,42 +115,7 @@ def looping_heartbeat():
             pass
 
 
-# 自定义 Namespace
-class TestNamespace(Namespace):
-    def __init__(self, namespace=None):
-        super().__init__(namespace)
-        self.consumer_id = None
-        self.producer_id = None
-
-    def on_connect(self):
-        print('Client connected to TestNamespace')
-
-    def on_disconnect(self):
-        print(f'Client {request.sid} disconnected from TestNamespace')
-        if request.sid == self.consumer_id:
-            self.emit('stop_camera', room=self.producer_id, namespace=self.namespace)
-
-    def on_post_consumer_id(self):
-        self.consumer_id = request.sid
-        print('sid received on post_consumer_id:', self.consumer_id)
-
-    def on_post_producer_id(self):
-        self.producer_id = request.sid
-        print('sid received on post_producer_id:', self.producer_id)
-        self.emit('start_camera_retrieve', room=self.consumer_id, namespace=self.namespace)
-        print('emit start_camera_retrieve to consumer')
-
-    def on_camera_retrieve(self):
-        self.emit('camera_retrieve', room=self.producer_id, namespace=self.namespace)
-        print('emit camera_retrieve to producer')
-
-    def on_camera_data(self, data):
-        self.emit('camera_data', data, room=self.consumer_id, namespace=self.namespace)
-        print('emit camera_data to consumer')
-
-
 if __name__ == '__main__':
     LOGGER.info("start cgi")
     multiprocessing.Process(target=looping_heartbeat).start()
-    socketio.on_namespace(TestNamespace("/test"))
     socketio.run(app, host='0.0.0.0', debug=False, port=config.config.get("flask_port"))

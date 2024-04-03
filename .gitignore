@@ -6,6 +6,6 @@
 temp
 !temp/.gitkeep
 policy.csv
-ais/*.pyd
-ais/*.dll
+*.pyd
+*.dll
 __pycache__

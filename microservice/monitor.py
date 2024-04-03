@@ -136,7 +136,7 @@ class MonitorService:
         cursor = conn.cursor()
         # 构建查询语句
         query = """
-                SELECT task.id, task_id, user_id, username, path, time
+                SELECT task.id, task_id, user_id, username, path, time, input_mode
                 FROM task INNER JOIN users ON task.user_id=users.id
                 WHERE task_id=%s
                 """
@@ -146,13 +146,14 @@ class MonitorService:
         result = cursor.fetchone()
         task = None
         if result:
-            id, task_id, user_id, username, path, time = result
+            id, task_id, user_id, username, path, time, input_mode = result
             task = Task(
                 task_id=task_id,
                 user_id=user_id,
                 username=username,
                 path=path,
                 time=time,
+                input_mode=input_mode,
             )
         cursor.close()
         return task.to_json() if task else None

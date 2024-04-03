@@ -15,7 +15,8 @@ from video.unbuffered_sei_parser import UnbufferedSEIParser
 
 class CameraTemplate:
     def __init__(self, camera_id, hyperparameters, namespace, task_id, service_unique_id,
-                 camera_output_path, camera_output_json_path, service_name, ai_func):
+                 camera_output_path, camera_output_json_path, service_name, ai_func=None):
+        # ai_func接收image返回以字典为元素的列表
         self.ai_func = ai_func
         self.namespace = namespace
         self.task_id = task_id
@@ -122,3 +123,6 @@ class CameraTemplate:
             if hyperparameter.name == 'camera_mode':
                 self.camera_mode = hyperparameter.value
                 return
+
+    def log(self, log_str):
+        self.sio.emit('log', log_str, namespace=self.namespace)
