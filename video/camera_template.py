@@ -75,48 +75,53 @@ class CameraTemplate:
 
         sio.connect(f'http://{config.config.get("flask_host")}:{config.config.get("flask_port")}{namespace}')
         self.background_write_process = BackgroundWriteProcess(camera_output_path, camera_output_json_path,
-                                                                self.width, self.height)
+                                                               self.width, self.height)
 
     def loop_process(self):
-        while not self.stop_camera_flag:
-            if self.camera_mode == CameraModeEnum.SEI.value:
-                sei_str = self.unbuffered_sei_parser.get_sei()
-                if sei_str:
-                    latest_sei_milli_timestamp = int(sei_str)
-                    local_milli_timestamp = time.time() * 1000
-                    self.diff_timestamp = local_milli_timestamp - latest_sei_milli_timestamp
-            image = self.unbuffered_sei_parser.read()
-            if image is None:
-                break
-            # 对帧进行处理
-            json_items = self.ai_func(image)
+        try:
+            while not self.stop_camera_flag:
+                if self.camera_mode == CameraModeEnum.SEI.value:
+                    sei_str = self.unbuffered_sei_parser.get_sei()
+                    if sei_str:
+                        latest_sei_milli_timestamp = int(sei_str)
+                        local_milli_timestamp = time.time() * 1000
+                        self.diff_timestamp = local_milli_timestamp - latest_sei_milli_timestamp
+                image = self.unbuffered_sei_parser.read()
+                if image is None:
+                    break
+                # 对帧进行处理
+                json_items = self.ai_func(image)
+                if self.camera_mode == CameraModeEnum.PYTHON_PUBLISH_STREAM.value:
+                    self.pipe.stdin.write(image.tostring())
+                if self.camera_mode == CameraModeEnum.SEI.value:
+                    camera_data = {
+                        'data': json_items,
+                        'timestamp': int(time.time() * 1000) - self.diff_timestamp
+                    }
+                    json_items_str = json.dumps(camera_data)
+                elif self.camera_mode == CameraModeEnum.WEBRTC_STREAMER.value:
+                    camera_data = {
+                        'data': json_items,
+                        'timestamp': int(time.time() * 1000)
+                    }
+                    json_items_str = json.dumps(camera_data)
+                else:
+                    json_items_str = json.dumps(json_items)
+                self.sio.emit('camera_data', json_items_str, namespace=self.namespace)
+                self.background_write_process.put(image, json_items_str)
+        except Exception as e:
+            self.log(str(e))
+            raise
+        finally:
+            self.sio.disconnect()
+            self.background_write_process.release()
+            self.unbuffered_sei_parser.release()
             if self.camera_mode == CameraModeEnum.PYTHON_PUBLISH_STREAM.value:
-                self.pipe.stdin.write(image.tostring())
-            if self.camera_mode == CameraModeEnum.SEI.value:
-                camera_data = {
-                    'data': json_items,
-                    'timestamp': int(time.time() * 1000) - self.diff_timestamp
-                }
-                json_items_str = json.dumps(camera_data)
-            elif self.camera_mode == CameraModeEnum.WEBRTC_STREAMER.value:
-                camera_data = {
-                    'data': json_items,
-                    'timestamp': int(time.time() * 1000)
-                }
-                json_items_str = json.dumps(camera_data)
-            else:
-                json_items_str = json.dumps(json_items)
-            self.sio.emit('camera_data', json_items_str, namespace=self.namespace)
-            self.background_write_process.put(image, json_items_str)
-        self.sio.disconnect()
-        self.background_write_process.release()
-        self.unbuffered_sei_parser.release()
-        if self.camera_mode == CameraModeEnum.PYTHON_PUBLISH_STREAM.value:
-            self.pipe.terminate()
-        if self.camera_mode == CameraModeEnum.SEI.value and self.sei_injector:
-            self.sei_injector.release()
-        after_camera_call(self.camera_output_path, self.camera_output_json_path,
-                          self.task_id, self.service_name, self.service_unique_id)
+                self.pipe.terminate()
+            if self.camera_mode == CameraModeEnum.SEI.value and self.sei_injector:
+                self.sei_injector.release()
+            after_camera_call(self.camera_output_path, self.camera_output_json_path,
+                              self.task_id, self.service_name, self.service_unique_id)
 
     def parse_camera_mode(self, hyperparameters):
         for hyperparameter in hyperparameters:

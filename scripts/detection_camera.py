@@ -8,10 +8,10 @@ import socketio
 
 from ais import tensorrt_alpha_pybind
 from common import config
+from microservice.detection import DetectionService
 from video.background_write_process import BackgroundWriteProcess
 from common.log import LOGGER
 from common.util import clear_camera_temp_resource
-from microservice.detection_hx import DetectionService
 from scripts.camera_common import after_camera_call, parse_camera_command_args
 from video.camera_mode_enum import CameraModeEnum
 from video.sei_injector import SEIInjector

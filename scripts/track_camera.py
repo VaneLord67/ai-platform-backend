@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 
 from ais import util_bytetrack, tensorrt_alpha_pybind
+from common.log import LOGGER
 from common.util import clear_camera_temp_resource
 from microservice.recognition import RecognitionService
 from scripts.camera_common import parse_camera_command_args
@@ -76,6 +77,8 @@ def camera_cpp_call(camera_id, hyperparameters, namespace, task_id, service_uniq
 
         camera_template.ai_func = ai_func
         camera_template.loop_process()
+    except Exception as e:
+        LOGGER.error(e)
     finally:
         clear_camera_temp_resource(camera_output_path, camera_output_json_path)
 

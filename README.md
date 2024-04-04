@@ -58,6 +58,11 @@ sudo chmod -R ug+rw redis_volume
 docker run --privileged -d -v /media/hx/1a19b641-b996-4b88-b2ca-1cc3ded71d49/ai-platform/redis_volume:/data --rm --name ai-redis -p 6379:6379 redis
 ```
 
+### 5. webrtc-streamer
+```shell
+docker run --network=host -d --name ai-webrtc mpromonet/webrtc-streamer
+```
+
 ## 驱动、CUDA、CUDNN安装
 按照NVIDIA官方文档安装显卡可支持的NVIDIA驱动和CUDA、CUDNN
 
@@ -94,123 +99,10 @@ make
 ## Pybind安装
 [Pybind install](https://pybind11.readthedocs.io/en/stable/installing.html)
 
-## 编译C++项目产生Python模块文件
-### cpp_redis
-[cpp_redis安装文档](https://github.com/cpp-redis/cpp_redis/wiki/Installation)
+## 修改配置文件
+1. config.json: 按照实际的端口号填写，注意minio_url要改为服务器的公网ip或局域网ip
+2. nameko_config.yaml: 修改AMQP_URI
 
-```shell
-git clone git@github.com:Cylix/cpp_redis.git
-cd cpp_redis
-git submodule init && git submodule update
-mkdir build && cd build
-cmake .. -DCMAKE_BUILD_TYPE=Release
-make
-```
-
-```shell
-# 如果在cmake环节出现字样：
-# CMake Error: install(EXPORT "cpp_redis" ...) includes target "cpp_redis" which requires target "tacopie" that is not in any export set.
-# 则在cpp_redis目录执行以下命令后再cmake
-cd tacopie
-git fetch origin pull/5/head:cmake-fixes
-git checkout cmake-fixes
-cd ..
-```
-
-### spdlog
-[spdlog安装](https://github.com/gabime/spdlog)
-
-git clone下载其头文件库即可，留待后续使用。
-
-```shell
-git clone git@github.com:gabime/spdlog.git
-```
-
-### cpp_ai_utils
-[cpp_ai_utils github地址](https://github.com/VaneLord67/cpp_ai_utils)
-
-这是c++项目中一些公共能力的封装，提供了redis连接、jsonl文件结果写入等。
-
-依赖项目有OpenCV、cpp_redis、spdlog，编译cpp_ai_utils产生libcpp_ai_utils.a。
-
-```shell
-git clone git@github.com:VaneLord67/cpp_ai_utils.git
-cd cpp_ai_utils/cpp_ai_utils
-mkdir build && cd build
-# 需要修改CMakeLists.txt中的头文件路径、库路径、动态链接库名
-cmake ..
-make
-```
-
-### app_yolo_cls
-下载cls onnx放到app_yolo_cls项目下
-
-[yolov8n-cls.onnx下载地址](https://docs.ultralytics.com/zh/tasks/classify/#_2)
-
-[app_yolo_cls github地址](https://github.com/VaneLord67/yolov8-cls-OpenCV)
-
-修改app_yolo_cls中的modelPath
-编译产生Python模块文件libapp_yolo_cls.so
-
-```shell
-git clone git@github.com:VaneLord67/ai-platform-yolov8-cls-OpenCV.git
-cd ai-platform-yolov8-cls-OpenCV
-mkdir build && cd build
-# 修改cmake中的头文件路径、库路径
-cmake ..
-make
-```
-
-将libapp_yolo_cls.so放在ai-platform-backend/ais文件夹下
-
-### Eigen3.3.9
-
-[gitlab地址](https://gitlab.com/libeigen/eigen/-/releases/3.3.9)
-
-仅头文件库，git clone后留待后续使用
-
-```shell
-git clone git@gitlab.com:libeigen/eigen.git
-git checkout 3.3.9
-mkdir build && cd build
-cmake ..
-make
-```
-
-### ByteTrack-cpp
-
-[github地址](https://github.com/Vertical-Beach/ByteTrack-cpp)
-
-```shell
-# 依赖Eigen3.3.9
-# 将这一行的SHARED改为STATIC，使用Cmake编译
-add_library(${PROJECT_NAME} SHARED
-# 给CMAKE_CXX_FLAGS加上-fPIC
-
-git clone git@github.com:Vertical-Beach/ByteTrack-cpp.git
-cd ByteTrack-cpp
-mkdir build && cd build
-cmake ..
-make
-```
-
-### app_yolo
-[app_yolo github地址](https://github.com/VaneLord67/ai-platform-yolov8)
-
-修改app_yolo中的modelPath为TensorRT模型转化步骤中产生的trt文件路径。
-
-依赖OpenCV、TensorRT、CUDA、pybind、cpp_ai_utils、ByteTrack，
-编译产生Python模块文件libapp_yolo.so
-
-将libapp_yolo.so放在ai-platform-backend/ais文件夹下
-### 其他c++运行时动态库依赖
-我个人开发用的win平台上：cudart64_110.dll、nvinfer.dll、opencv_world480.dll、openh264-1.8.0-win64.dll
-
-linux平台下，cudart64可以在CUDA安装文件夹的bin目录下找到，nvinfer可以在tensorRT安装目录lib下找到，
-libopencv_world.so在编译后build/lib目录下找到
-openh264-1.8.0下载地址：https://github.com/cisco/openh264/releases/tag/v1.8.0
-
-将这些动态库放到ai-platform-backend/ais文件夹下
 ## python Flask启动
 ```cmd
 直接在项目根目录下运行cgi/main.py即可

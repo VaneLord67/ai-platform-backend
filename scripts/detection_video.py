@@ -6,7 +6,7 @@ import numpy as np
 
 from common.log import LOGGER
 from common.util import create_redis_client, clear_video_temp_resource
-from microservice.detection_hx import DetectionService
+from microservice.detection import DetectionService
 from scripts.video_common import after_video_call, parse_video_command_args
 from ais import tensorrt_alpha_pybind
 

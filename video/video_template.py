@@ -41,26 +41,30 @@ class VideoTemplate:
         self.redis_client.setex(name=video_progress_key, time=timedelta(days=1), value="0.00")
 
     def loop_process(self):
-        current_frame_count = 0
-        with open(self.video_output_json_path, 'w') as f:
-            # 逐帧读取视频
-            while True:
-                # 读取一帧
-                ret, image = self.video_capture.read()
-                # 检查是否成功读取帧
-                if not ret:
-                    break
-                current_frame_count += 1
-                progress_str = "%.2f" % (current_frame_count / self.total_frame_count)
-                self.redis_client.setex(name=self.video_progress_key, time=timedelta(days=1), value=progress_str)
-                # 对帧进行处理
-                json_items = self.ai_func(image)
-                self.camera_write_process.put(image, json.dumps(json_items))
-        # 释放资源
-        self.video_capture.release()
-        self.camera_write_process.release()
-        after_video_call(self.video_output_path, self.video_output_json_path,
-                         self.task_id, self.service_name, self.service_unique_id)
+        try:
+            current_frame_count = 0
+            with open(self.video_output_json_path, 'w') as f:
+                # 逐帧读取视频
+                while True:
+                    # 读取一帧
+                    ret, image = self.video_capture.read()
+                    # 检查是否成功读取帧
+                    if not ret:
+                        break
+                    current_frame_count += 1
+                    progress_str = "%.2f" % (current_frame_count / self.total_frame_count)
+                    self.redis_client.setex(name=self.video_progress_key, time=timedelta(days=1), value=progress_str)
+                    # 对帧进行处理
+                    json_items = self.ai_func(image)
+                    self.camera_write_process.put(image, json.dumps(json_items))
+        except Exception as e:
+            self.log(str(e))
+            raise
+        finally:
+            self.video_capture.release()
+            self.camera_write_process.release()
+            after_video_call(self.video_output_path, self.video_output_json_path,
+                             self.task_id, self.service_name, self.service_unique_id)
 
     def log(self, log_str):
         pipeline = self.redis_client.pipeline()
