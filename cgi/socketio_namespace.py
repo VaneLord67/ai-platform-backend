@@ -1,4 +1,4 @@
-import base64
+import time
 import uuid
 from datetime import timedelta
 from typing import Union
@@ -83,6 +83,9 @@ class DynamicNamespace(Namespace):
 
     def on_camera_data(self, data):
         self.emit(event='camera_data', data=data, room=self.consumer_id, namespace=self.namespace)
+
+    def on_time_sync_request(self):
+        self.emit(event='time_sync', data=int(time.time() * 1000), room=self.consumer_id, namespace=self.namespace)
 
     def on_stop_camera(self):
         LOGGER.info(f"{self.namespace} stop camera...")
